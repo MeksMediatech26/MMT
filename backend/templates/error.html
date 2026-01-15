@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Error – Meks Media Tech</title>
+
+<!-- Injected by FastAPI -->
+<meta name="error-code" content="{{ error_code }}">
+
+<script src="https://unpkg.com/preact@10.5.13/dist/preact.umd.js"></script>
+<script src="https://unpkg.com/preact@10.5.13/hooks/dist/hooks.umd.js"></script>
+
+<style>
+body { margin:0; background:#000; color:#fff; font-family:Arial; line-height:1.7; }
+header { display:flex; justify-content:space-between; align-items:center; padding:1rem; background:#111; border-bottom:1px solid #A6700C; }
+header img { height:40px; }
+.hamburger { font-size:26px; cursor:pointer; color:#A6700C; }
+.sidebar { position:fixed; top:0; left:-260px; width:260px; height:100vh; background:#111; border-right:2px solid #A6700C; transition:left 0.3s ease; padding-top:60px; z-index:2000; }
+.sidebar.open { left:0; }
+.sidebar a { display:block; padding:1rem; color:#fff; text-decoration:none; border-bottom:1px solid #222; }
+.sidebar a:hover { background:#A6700C; }
+.container { padding:1rem; max-width:900px; margin:auto; }
+.error-container { height:80vh; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+.error-container h1 { font-size:80px; margin:0; color:#A6700C; }
+.error-container h2 { margin-top:0; }
+.error-container p { margin:10px 0; }
+.btn { background:#A6700C; color:black; padding:10px 20px; border-radius:5px; font-weight:bold; text-decoration:none; }
+footer { margin-top:2rem; padding:1rem; background:#111; border-top:1px solid #A6700C; text-align:center; }
+footer a { color:#A6700C; margin:0 10px; text-decoration:none; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+const { h, render } = preact;
+const { useEffect, useState } = preactHooks;
+
+const ERROR_MAP = {
+    400: { title: "Bad Request", message: "The request could not be understood by the server." },
+    401: { title: "Unauthorized", message: "You are not authorized to access this page." },
+    403: { title: "Forbidden", message: "You do not have permission to view this resource." },
+    404: { title: "Page Not Found", message: "The page you are looking for does not exist." },
+    405: { title: "Method Not Allowed", message: "The HTTP method used is not allowed for this URL." },
+    408: { title: "Request Timeout", message: "The request took too long. Please try again later." },
+    409: { title: "Conflict", message: "The request could not be completed due to a conflict with the current state of the resource." },
+    410: { title: "Gone", message: "The resource you requested is no longer available." },
+    500: { title: "Internal Server Error", message: "Oops! Something went wrong on our server." },
+    501: { title: "Not Implemented", message: "The server does not support the functionality required to fulfill this request." },
+    502: { title: "Bad Gateway", message: "The server received an invalid response from an upstream server." },
+    503: { title: "Service Unavailable", message: "The service is temporarily unavailable. Please try again later." },
+    504: { title: "Gateway Timeout", message: "The server did not receive a timely response from an upstream server." },
+    505: { title: "HTTP Version Not Supported", message: "The server does not support the HTTP protocol version used in the request." }
+};
+
+function ErrorPage() {
+    const [errorCode, setErrorCode] = useState(404);
+
+    useEffect(() => {
+        const meta = document.querySelector('meta[name="error-code"]');
+        const code = parseInt(meta?.content) || 404;
+        setErrorCode(ERROR_MAP[code] ? code : 404);
+
+        const sidebar = document.getElementById("sidebar");
+        document.body.addEventListener("click", e => {
+            if (!sidebar.contains(e.target) && !e.target.classList.contains("hamburger"))
+                sidebar.classList.remove("open");
+        });
+        sidebar.addEventListener("mouseleave", () => {
+            setTimeout(() => sidebar.classList.remove("open"), 3000);
+        });
+    }, []);
+
+    const { title, message } = ERROR_MAP[errorCode];
+
+    return h("div", {}, [
+        h("header", {}, [
+            h("div", { class: "hamburger", onclick: () => document.getElementById('sidebar').classList.toggle('open') }, "☰"),
+            h("img", { src: "/static/assets/logo.png", alt: "Meks Media Tech Logo" })
+        ]),
+        h("div", { id: "sidebar", class: "sidebar" }, [
+            h("a", { href: "/" }, "Home"),
+            h("a", { href: "/about" }, "About"),
+            h("a", { href: "/services" }, "Services"),
+            h("a", { href: "/gallery" }, "Gallery"),
+            h("a", { href: "/testimonials" }, "Testimonials"),
+            h("a", { href: "/contact" }, "Contact")
+        ]),
+        h("div", { class: "container error-container" }, [
+            h("h1", {}, errorCode),
+            h("h2", {}, title),
+            h("p", {}, message),
+            h("a", { href: "/", class: "btn" }, "Go Home")
+        ]),
+        h("footer", {}, [
+            h("a", { href: "/" }, "Home"),
+            h("a", { href: "/about" }, "About"),
+            h("a", { href: "/services" }, "Services"),
+            h("a", { href: "/gallery" }, "Gallery"),
+            h("a", { href: "/testimonials" }, "Testimonials"),
+            h("a", { href: "/contact" }, "Contact"),
+            h("p", { style: "color:#555; margin-top:10px;" }, "© 2025 Meks Media Tech")
+        ])
+    ]);
+}
+
+render(h(ErrorPage), document.getElementById("app"));
+</script>
+
+</body>
+</html>
