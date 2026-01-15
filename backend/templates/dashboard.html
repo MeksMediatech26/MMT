@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meks Media Tech | Admin Dashboard</title>
+  <script src="https://unpkg.com/preact@10.19.3/dist/preact.umd.js"></script>
+  <script src="https://unpkg.com/preact@10.19.3/hooks/dist/hooks.umd.js"></script>
+  <script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+  
+  <style>
+    :root {
+      --gold: #A6700C;
+      --gold-dark: #7B5008;
+      --bg: #0a0a0a;
+      --surface: #151515;
+      --card: #1a1a1a;
+      --border: rgba(166,112,12,0.2);
+      --text: #ffffff;
+      --muted: #888;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Segoe UI',system-ui,-apple-system,Arial; background:var(--bg); color:var(--text); }
+    
+    .app { display:flex; min-height:100vh; }
+    
+    .sidebar {
+      width:280px; background:var(--surface); border-right:2px solid var(--border);
+      padding:24px; position:fixed; left:0; top:0; bottom:0; overflow-y:auto;
+      z-index:1000;
+    }
+    @media(max-width:968px) {
+      .sidebar { transform:translateX(-100%); transition:transform 0.3s; }
+      .sidebar.open { transform:translateX(0); }
+    }
+    
+    .sidebar-logo { display:flex; align-items:center; gap:12px; margin-bottom:32px; }
+    .sidebar-logo-icon {
+      width:50px; height:50px; background:linear-gradient(135deg,var(--gold),var(--gold-dark));
+      border-radius:10px; display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:20px; color:#000;
+    }
+    .sidebar-title { margin:0; font-size:18px; color:var(--gold); }
+    .sidebar-subtitle { font-size:12px; color:var(--muted); margin:4px 0 0; }
+    
+    .nav { list-style:none; padding:0; margin:0; }
+    .nav-item {
+      padding:14px 16px; margin-bottom:8px; border-radius:8px;
+      cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:12px;
+      color:var(--text); font-weight:600;
+    }
+    .nav-item:hover { background:rgba(166,112,12,0.1); }
+    .nav-item.active { background:var(--gold); color:#000; }
+    
+    .main-content { flex:1; margin-left:280px; padding:24px; }
+    @media(max-width:968px) { .main-content { margin-left:0; } }
+    
+    .header {
+      background:var(--surface); padding:20px 24px; border-radius:12px;
+      margin-bottom:24px; display:flex; justify-content:space-between; align-items:center;
+      flex-wrap:wrap; gap:12px;
+    }
+    .header h1 { margin:0; font-size:28px; color:var(--gold); }
+    .header-actions { display:flex; gap:12px; }
+    
+    .btn {
+      padding:10px 20px; border-radius:8px; border:none; cursor:pointer;
+      font-weight:600; transition:all 0.2s; font-size:14px;
+    }
+    .btn-primary { background:var(--gold); color:#000; }
+    .btn-primary:hover { background:var(--gold-dark); }
+    .btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
+    .btn-secondary { background:transparent; border:1px solid var(--border); color:var(--text); }
+    .btn-secondary:hover { background:rgba(166,112,12,0.1); }
+    .btn-danger { background:#e74c3c; color:#fff; }
+    .btn-danger:hover { background:#c0392b; }
+    .btn-success { background:#4CAF50; color:#fff; }
+    .btn-success:hover { background:#45a049; }
+    .btn-sm { padding:6px 12px; font-size:12px; }
+    
+    .hamburger {
+      display:none; background:transparent; border:none; color:var(--gold);
+      font-size:28px; cursor:pointer; padding:8px;
+    }
+    @media(max-width:968px) { .hamburger { display:block; } }
+    
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:20px; margin-bottom:24px; }
+    .stat-card {
+      background:var(--card); padding:24px; border-radius:12px;
+      border:1px solid var(--border); transition:all 0.2s;
+    }
+    .stat-card:hover { transform:translateY(-4px); border-color:var(--gold); }
+    .stat-label { font-size:14px; color:var(--muted); margin-bottom:8px; }
+    .stat-value { font-size:32px; font-weight:800; color:var(--gold); }
+    .stat-change { font-size:12px; color:#4CAF50; margin-top:8px; }
+    
+    .card {
+      background:var(--card); border-radius:12px; padding:24px;
+      border:1px solid var(--border); margin-bottom:24px;
+    }
+    .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+    .card-title { margin:0; font-size:20px; color:var(--gold); }
+    
+    .items-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+    .item-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:10px;
+      padding:20px; transition:all 0.2s; position:relative;
+    }
+    .item-card:hover { border-color:var(--gold); transform:translateY(-2px); }
+    .item-card-header { margin-bottom:12px; }
+    .item-card-title { font-size:18px; font-weight:700; color:var(--text); margin:0 0 8px; }
+    .item-card-subtitle { font-size:13px; color:var(--muted); margin:0; }
+    .item-card-body { margin-bottom:16px; }
+    .item-card-text { font-size:14px; color:var(--text); line-height:1.5; margin:0 0 8px; }
+    .item-card-label { font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; margin-top:12px; }
+    .item-card-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; border-top:1px solid var(--border); padding-top:16px; }
+    
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.8); display:flex;
+      align-items:center; justify-content:center; z-index:2000; padding:20px;
+      overflow-y:auto;
+    }
+    .modal {
+      background:var(--card); border-radius:12px; padding:32px;
+      max-width:600px; width:100%; border:1px solid var(--border);
+      max-height:90vh; overflow-y:auto;
+    }
+    .modal h3 { margin:0 0 20px; color:var(--gold); font-size:24px; }
+    .form-group { margin-bottom:20px; }
+    .form-group label { display:block; margin-bottom:8px; color:var(--text); font-weight:600; }
+    .form-group input, .form-group textarea, .form-group select {
+      width:100%; padding:12px; background:var(--surface); border:1px solid var(--border);
+      border-radius:8px; color:var(--text); font-size:14px;
+    }
+    .form-group textarea { min-height:120px; resize:vertical; }
+    .form-group p { margin:0; color:var(--text); font-size:14px; line-height:1.6; }
+    .modal-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:24px; flex-wrap:wrap; }
+    
+    .photo-preview {
+      margin-top:12px; text-align:center;
+    }
+    .photo-preview img, .photo-preview video {
+      max-width:100%; max-height:200px; border-radius:8px;
+      object-fit:cover; border:2px solid var(--border);
+    }
+    
+    .gallery-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
+    .gallery-item {
+      aspect-ratio:1; background:var(--surface); border-radius:8px;
+      overflow:hidden; position:relative; cursor:pointer; border:1px solid var(--border);
+    }
+    .gallery-item img, .gallery-item video { width:100%; height:100%; object-fit:cover; }
+    .gallery-item-overlay {
+      position:absolute; inset:0; background:rgba(0,0,0,0.7); display:flex;
+      align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s;
+      flex-direction:column; gap:8px;
+    }
+    .gallery-item:hover .gallery-item-overlay { opacity:1; }
+    
+    .badge { padding:4px 12px; border-radius:12px; font-size:12px; font-weight:700; display:inline-block; }
+    .badge-success { background:#4CAF50; color:#fff; }
+    .badge-warning { background:#ff9800; color:#fff; }
+    .badge-pending { background:var(--gold); color:#000; }
+    
+    .action-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+    
+    .detail-row { display:flex; justify-content:space-between; align-items:start; margin-bottom:8px; padding:8px 0; border-bottom:1px solid rgba(166,112,12,0.1); }
+    .detail-row:last-child { border-bottom:none; }
+    .detail-label { font-size:13px; color:var(--muted); font-weight:600; }
+    .detail-value { font-size:14px; color:var(--text); text-align:right; max-width:60%; }
+    
+    input[type="file"] { padding:8px; cursor:pointer; }
+    
+    .service-selector { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-top:12px; }
+    .service-option {
+      padding:12px; border:2px solid var(--border); border-radius:8px;
+      cursor:pointer; transition:all 0.2s; text-align:center;
+    }
+    .service-option:hover { border-color:var(--gold); }
+    .service-option.selected { border-color:var(--gold); background:rgba(166,112,12,0.1); }
+    .service-icon { font-size:32px; margin-bottom:8px; }
+    .service-name { font-size:13px; font-weight:600; }
+
+    .toast {
+      position:fixed;
+      top:20px;
+      right:20px;
+      padding:16px 24px;
+      border-radius:8px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.3);
+      z-index:3000;
+      animation:slideInRight 0.3s ease;
+      max-width:400px;
+    }
+    .toast.success { background:#4CAF50; color:#fff; }
+    .toast.error { background:#e74c3c; color:#fff; }
+    .toast.warning { background:#ff9800; color:#fff; }
+    .toast.info { background:#2196F3; color:#fff; }
+
+    @keyframes slideInRight {
+      from { transform:translateX(100%); opacity:0; }
+      to { transform:translateX(0); opacity:1; }
+    }
+
+    .confirm-dialog {
+      background:var(--card);
+      border-radius:12px;
+      padding:24px;
+      max-width:400px;
+      border:1px solid var(--border);
+    }
+    .confirm-dialog h4 {
+      margin:0 0 12px;
+      color:var(--gold);
+      font-size:20px;
+    }
+    .confirm-dialog p {
+      margin:0 0 20px;
+      color:var(--text);
+      line-height:1.6;
+    }
+    .confirm-actions {
+      display:flex;
+      gap:12px;
+      justify-content:flex-end;
+    }
+
+    .file-size-hint {
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    .error-text {
+      color:#ff4444;
+      font-size:12px;
+      margin-top:4px;
+    }
+
+    /* NEW STYLES FOR UPLOAD PROGRESS */
+    .upload-progress-container {
+      margin-top: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--surface);
+    }
+
+    .upload-item {
+      margin-bottom: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+    }
+
+    .upload-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .upload-filename {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 70%;
+    }
+
+    .upload-percentage {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gold);
+    }
+
+    .upload-progress-bar {
+      height: 8px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .upload-progress-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .upload-status {
+      font-size: 12px;
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .upload-status-text {
+      color: var(--muted);
+    }
+
+    .upload-success {
+      color: #4CAF50;
+      font-weight: 600;
+    }
+
+    .upload-error {
+      color: #e74c3c;
+      font-weight: 600;
+    }
+
+    .multi-file-hint {
+      font-size: 12px;
+      color: var(--gold);
+      margin-top: 4px;
+    }
+
+    .file-queue {
+      margin-top: 12px;
+      max-height: 150px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      background: var(--surface);
+    }
+
+    .file-queue-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(166,112,12,0.1);
+    }
+
+    .file-queue-item:last-child {
+      border-bottom: none;
+    }
+
+    .file-size {
+      color: var(--muted);
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="module">
+    const { h, render } = window.preact;
+    const { useState, useEffect } = window.preactHooks;
+    const html = window.htm.bind(h);
+
+    const API_BASE = window.location.origin;
+    const MAX_IMAGE_SIZE = 1 * 1024 * 1024; // 1MB
+    const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+
+    // Service categories with icons from the frontend
+    const PREDEFINED_SERVICES = [
+      { title: 'Solar Installation', category: 'Energy', icon: '☀️', description: 'Complete solar panel installation and maintenance' },
+      { title: 'CCTV Setup', category: 'Security', icon: '📹', description: 'Professional CCTV camera installation and monitoring' },
+      { title: 'DSTV Installation', category: 'Entertainment', icon: '📡', description: 'DSTV and satellite TV installation' },
+      { title: 'GOTV Installation', category: 'Entertainment', icon: '📺', description: 'GOTV setup and configuration' },
+      { title: 'Inverter Installation', category: 'Energy', icon: '🔋', description: 'Power inverter installation and servicing' },
+      { title: 'Electrical Wiring', category: 'Electrical', icon: '⚡', description: 'Professional electrical wiring services' }
+    ];
+
+    function Dashboard() {
+      const [activeTab, setActiveTab] = useState('overview');
+      const [sidebarOpen, setSidebarOpen] = useState(false);
+      
+      const [services, setServices] = useState([]);
+      const [faqs, setFaqs] = useState([]);
+      const [testimonials, setTestimonials] = useState([]);
+      const [gallery, setGallery] = useState({ photos: [], videos: [] });
+      const [contacts, setContacts] = useState([]);
+      const [quotes, setQuotes] = useState([]);
+      const [about, setAbout] = useState({ mission: '', history: '', team: [] });
+      
+      const [modal, setModal] = useState(null);
+      const [confirmDialog, setConfirmDialog] = useState(null);
+      const [toast, setToast] = useState(null);
+      const [uploading, setUploading] = useState(false);
+      const [uploadProgress, setUploadProgress] = useState([]);
+
+      useEffect(() => {
+        fetchAllData();
+      }, []);
+
+      const showToast = (message, type = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+      };
+
+      const fetchAllData = async () => {
+        try {
+          const [servicesRes, faqsRes, testimonialsRes, galleryRes, contactsRes, quotesRes, aboutRes] = await Promise.all([
+            fetch(`/api/services`).then(r => r.json()).catch(() => []),
+            fetch(`/api/faqs`).then(r => r.json()).catch(() => []),
+            fetch(`/api/admin/testimonials`).then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch(`/api/gallery`).then(r => r.json()).catch(() => ({ photos: [], videos: [] })),
+            fetch(`/api/admin/contacts`).then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch(`/api/admin/quotes`).then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch(`/api/about`).then(r => r.json()).catch(() => ({ mission: '', history: '', team: [] }))
+          ]);
+          
+          setServices(servicesRes);
+          setFaqs(faqsRes);
+          setTestimonials(testimonialsRes);
+          setGallery(galleryRes);
+          setContacts(contactsRes);
+          setQuotes(quotesRes);
+          setAbout(aboutRes);
+        } catch (error) {
+          console.error('Error fetching data:', error);
+          showToast('Error loading data', 'error');
+        }
+      };
+
+      const validateFileSize = (file, type) => {
+        const maxSize = type === 'image' ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
+        const maxSizeText = type === 'image' ? '1MB' : '100MB';
+        
+        if (file.size > maxSize) {
+          const actualSize = (file.size / (1024 * 1024)).toFixed(2);
+          throw new Error(`File size (${actualSize}MB) exceeds maximum allowed size of ${maxSizeText}`);
+        }
+      };
+
+      // NEW: Function to upload a single file with progress tracking
+      const uploadFileWithProgress = async (file, onProgress) => {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          const formData = new FormData();
+          formData.append('file', file);
+
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const percentComplete = (event.loaded / event.total) * 100;
+              onProgress(Math.round(percentComplete));
+            }
+          });
+
+          xhr.addEventListener('load', () => {
+            if (xhr.status === 200) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                resolve(response.url);
+              } catch (error) {
+                reject(new Error('Failed to parse response'));
+              }
+            } else {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          });
+
+          xhr.addEventListener('error', () => {
+            reject(new Error('Network error during upload'));
+          });
+
+          xhr.addEventListener('abort', () => {
+            reject(new Error('Upload was cancelled'));
+          });
+
+          xhr.open('POST', `/api/upload`);
+          xhr.send(formData);
+        });
+      };
+
+      // NEW: Function to upload multiple files
+      const uploadMultipleFiles = async (files) => {
+        const uploads = [];
+        
+        // Initialize upload progress for each file
+        const initialProgress = files.map((file, index) => ({
+          id: index,
+          filename: file.name,
+          progress: 0,
+          status: 'pending',
+          error: null,
+          url: null
+        }));
+        
+        setUploadProgress(initialProgress);
+
+        try {
+          // Upload files sequentially to avoid overwhelming the server
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            
+            // Update status to uploading
+            setUploadProgress(prev => prev.map(item => 
+              item.id === i ? { ...item, status: 'uploading' } : item
+            ));
+
+            try {
+              const url = await uploadFileWithProgress(file, (progress) => {
+                // Update progress for this file
+                setUploadProgress(prev => prev.map(item => 
+                  item.id === i ? { ...item, progress } : item
+                ));
+              });
+
+              // Update status to completed
+              setUploadProgress(prev => prev.map(item => 
+                item.id === i ? { ...item, status: 'completed', progress: 100, url } : item
+              ));
+
+              uploads.push({
+                file,
+                url,
+                type: file.type.startsWith('image/') ? 'image' : 'video'
+              });
+            } catch (error) {
+              // Update status to error
+              setUploadProgress(prev => prev.map(item => 
+                item.id === i ? { ...item, status: 'error', error: error.message } : item
+              ));
+              throw error;
+            }
+          }
+
+          return uploads;
+        } catch (error) {
+          throw error;
+        }
+      };
+
+      const Sidebar = () => html`
+        <aside class="sidebar ${sidebarOpen?'open':''}">
+          <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">MM</div>
+            <div>
+              <div class="sidebar-title">Meks Media Tech</div>
+              <div class="sidebar-subtitle">Admin Dashboard</div>
+            </div>
+          </div>
+          <nav class="nav">
+            ${['overview','services','faqs','gallery','testimonials','contacts','quotes','about'].map(tab => html`
+              <div class="nav-item ${activeTab===tab?'active':''}"
+                   onClick=${() => { setActiveTab(tab); setSidebarOpen(false); }}>
+                <span>${tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+              </div>
+            `)}
+          </nav>
+        </aside>
+      `;
+
+      const Overview = () => {
+        const stats = [
+          { label:'Total Visitors', value:'143', change:'+12% this month' },
+          { label:'Active Services', value:services.length, change:'All operational' },
+          { label:'Pending Testimonials', value:testimonials.filter(t=>!t.approved).length, change:'Need review' },
+          { label:'Gallery Items', value:(gallery.photos.length + gallery.videos.length), change:'Media files' }
+        ];
+
+        return html`
+          <div class="stats-grid">
+            ${stats.map(stat => html`
+              <div class="stat-card">
+                <div class="stat-label">${stat.label}</div>
+                <div class="stat-value">${stat.value}</div>
+                <div class="stat-change">${stat.change}</div>
+              </div>
+            `)}
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Recent Activity</h3>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Recent Contacts</span>
+              <span class="detail-value">${contacts.length} messages</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Recent Quote Requests</span>
+              <span class="detail-value">${quotes.length} requests</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Pending Approvals</span>
+              <span class="detail-value">${testimonials.filter(t=>!t.approved).length} testimonials</span>
+            </div>
+          </div>
+        `;
+      };
+
+      const handleDelete = async (type, id, name) => {
+        setConfirmDialog({
+          title: `Delete ${type}?`,
+          message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+          onConfirm: async () => {
+            try {
+              const endpoints = {
+                service: `/api/services/${id}`,
+                faq: `/api/faqs/${id}`,
+                testimonial: `/api/testimonials/${id}`,
+                photo: `/api/gallery/photos/${id}`,
+                video: `/api/gallery/videos/${id}`,
+                contact: `/api/contacts/${id}`,
+                quote: `/api/quotes/${id}`,
+                team: `/api/team/${id}`
+              };
+              
+              await fetch(`${API_BASE}${endpoints[type]}`, { method: 'DELETE' });
+              await fetchAllData();
+              showToast('Successfully deleted', 'success');
+            } catch (error) {
+              showToast('Error deleting item', 'error');
+            } finally {
+              setConfirmDialog(null);
+            }
+          },
+          onCancel: () => setConfirmDialog(null)
+        });
+      };
+
+      const handleApprove = async (id) => {
+        setConfirmDialog({
+          title: 'Approve Testimonial?',
+          message: 'This will make the testimonial visible on the public website.',
+          onConfirm: async () => {
+            try {
+              await fetch(`/api/testimonials/${id}/approve`, { method: 'PATCH' });
+              await fetchAllData();
+              showToast('Testimonial approved successfully', 'success');
+            } catch (error) {
+              showToast('Error approving testimonial', 'error');
+            } finally {
+              setConfirmDialog(null);
+            }
+          },
+          onCancel: () => setConfirmDialog(null)
+        });
+      };
+
+      const ServicesTab = () => html`
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Manage Services</h3>
+            <button class="btn btn-primary" onClick=${() => setModal({type:'service'})}>+ Add Service</button>
+          </div>
+          <div class="items-grid">
+            ${services.map(s => html`
+              <div class="item-card">
+                <div class="item-card-header">
+                  <div style="font-size:32px;margin-bottom:8px;">${s.icon || '⚙️'}</div>
+                  <h4 class="item-card-title">${s.title}</h4>
+                  <p class="item-card-subtitle">${s.category}</p>
+                </div>
+                <div class="item-card-body">
+                  <p class="item-card-text">${s.description}</p>
+                </div>
+                <div class="item-card-actions">
+                  <button class="btn btn-secondary btn-sm" onClick=${() => setModal({type:'service',data:s})}>Edit</button>
+                  <button class="btn btn-danger btn-sm" onClick=${() => handleDelete('service', s.id, s.title)}>Delete</button>
+                </div>
+              </div>
+            `)}
+          </div>
+        </div>
+      `;
+
+      const FAQsTab = () => html`
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Manage FAQs</h3>
+            <button class="btn btn-primary" onClick=${() => setModal({type:'faq'})}>+ Add FAQ</button>
+          </div>
+          <div class="items-grid">
+            ${faqs.map(f => html`
+              <div class="item-card">
+                <div class="item-card-header">
+                  <h4 class="item-card-title">${f.question}</h4>
+                </div>
+                <div class="item-card-body">
+                  <p class="item-card-text">${f.answer}</p>
+                </div>
+                <div class="item-card-actions">
+                  <button class="btn btn-secondary btn-sm" onClick=${() => setModal({type:'faq',data:f})}>Edit</button>
+                  <button class="btn btn-danger btn-sm" onClick=${() => handleDelete('faq', f.id, f.question)}>Delete</button>
+                </div>
+              </div>
+            `)}
+          </div>
+        </div>
+      `;
+
+      const GalleryTab = () => html`
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Gallery Management</h3>
+            <div class="action-buttons">
+              <button class="btn btn-primary" onClick=${() => setModal({type:'gallery',mediaType:'photo'})}>+ Add Photo</button>
+              <button class="btn btn-primary" onClick=${() => setModal({type:'gallery',mediaType:'video'})}>+ Add Video</button>
+            </div>
+          </div>
+          <h4 style="color:var(--gold);margin-top:20px;">Photos</h4>
+          <div class="gallery-grid">
+            ${gallery.photos.map(item => html`
+              <div class="gallery-item">
+                <img src=${item.url} alt=${item.title} />
+                <div class="gallery-item-overlay">
+                  <small style="color:#fff;padding:4px;">${item.title}</small>
+                  <div class="action-buttons">
+                    <button class="btn btn-secondary btn-sm" onClick=${() => setModal({type:'gallery',mediaType:'photo',data:item})}>Edit</button>
+                    <button class="btn btn-danger btn-sm" onClick=${() => handleDelete('photo', item.id, item.title)}>Delete</button>
+                  </div>
+                </div>
+              </div>
+            `)}
+          </div>
+          <h4 style="color:var(--gold);margin-top:20px;">Videos</h4>
+          <div class="gallery-grid">
+            ${gallery.videos.map(item => html`
+              <div class="gallery-item">
+                <video src=${item.url} />
+                <div class="gallery-item-overlay">
+                  <small style="color:#fff;padding:4px;">${item.title}</small>
+                  <div class="action-buttons">
+                    <button class="btn btn-secondary btn-sm" onClick=${() => setModal({type:'gallery',mediaType:'video',data:item})}>Edit</button>
+                    <button class="btn btn-danger btn-sm" onClick=${() => handleDelete('video', item.id, item.title)}>Delete</button>
+                  </div>
+                </div>
+              </div>
+            `)}
+          </div>
+        </div>
+      `;
+
+      const TestimonialsTab = () => html`
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Testimonials</h3>
+          </div>
+          <div class="items-grid">
+            ${testimonials.map(t => html`
+              <div class="item-card">
+                <div class="item-card-header">
+                  <h4 class="item-card-title">${t.name}</h4>
+                  <p class="item-card-subtitle">${t.state} • ${t.date}</p>
+                </div>
+                <div class="item-card-body">
+                  <div style="color:var(--gold);margin-bottom:8px;">${'★'.repeat(t.rating)}</div>
+                  <p class="item-card-text">${t.text}</p>
+                  <div style="margin-top:12px;">
+                    <span class="badge ${t.approved?'badge-success':'badge-pending'}">${t.approved?'Approved':'Pending'}</span>
+                  </div>
+                </div>
+                <div class="item-card-actions">
+                  ${!t.approved && html`<button class="btn btn-success btn-sm" onClick=${() => handleApprove(t.id)}>Approve</button>`}
+                  <button class="btn btn-secondary btn-sm" onClick=${() => setModal({type:'testimonial',data:t})}>View</button>
+                  <button class="btn btn-danger btn-sm" onClick=${() => handleDelete('testimonial', t.id, t.name)}>Delete</button>
+                </div>
+              </div>
+            `)}
+          </div>
+        </div>
+      `;
+
+      const ContactsTab = () => html`
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Contact Messages</h3>
+          </div>
+          <div class="items-grid">
+            ${contacts.map(c => html`
+              <div class="item-card">
+                <div class="item-card-header">
+                  <h4 class="item-card-title">${c.name}</h4>
+                  <p class="item-card-subtitle">${c.state} • ${new Date(c.created_at).toLocaleDateString()}</p>
+                </div>
+                <div class="item-card-body">
+                  <p class="item-card-label">Contact</p>
+                  <p class="item-card-text">${c.contact}</p>
+                  <p class="item-card-label">Message</p>
+                  <p class="item-card-text">${c.message.substring(0,100)}${c.message.length>100?'...':''}</p>
+                </div>
+                <div class="item-card-actions">
+                  <button class="btn btn-secondary btn-sm" onClick=${() => setModal({type:'contact',data:c})}>View Full</button>
+                  <button class="btn btn-danger btn-sm" onClick=${() => handleDelete('contact', c.id, c.name)}>Delete</button>
+                </div>
+              </div>
+            `)}
+          </div>
+        </div>
+      `;
+
+      const QuotesTab = () => html`
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Quote Requests</h3>
+          </div>
+          <div class="items-grid">
+            ${quotes.map(q => html`
+              <div class="item-card">
+                <div class="item-card-header">
+                  <h4 class="item-card-title">${q.fullname}</h4>
+                  <p class="item-card-subtitle">${q.state} • Submitted ${new Date(q.created_at).toLocaleDateString()}</p>
+                </div>
+                <div class="item-card-body">
+                  <div class="detail-row">
+                    <span class="detail-label">Contact</span>
+                    <span class="detail-value">${q.contact}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Service</span>
+                    <span class="detail-value">${q.service}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Preferred Date</span>
+                    <span class="detail-value">${q.date || 'Not specified'}</span>
+                  </div>
+                  ${q.extras && q.extras.length>0 && html`
+                    <div class="detail-row">
+                      <span class="detail-label">Extras</span>
+                      <span class="detail-value">${q.extras.join(', ')}</span>
+                    </div>
+                  `}
+                </div>
+                <div class="item-card-actions">
+                  <button class="btn btn-secondary btn-sm" onClick=${() => setModal({type:'quote',data:q})}>View Full</button>
+                  <button class="btn btn-danger btn-sm" onClick=${() => handleDelete('quote', q.id, q.fullname)}>Delete</button>
+                </div>
+              </div>
+            `)}
+          </div>
+        </div>
+      `;
+
+      const AboutTab = () => html`
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">About Us Content</h3>
+            <button class="btn btn-primary" onClick=${() => setModal({type:'about-content',data:about})}>Edit Content</button>
+          </div>
+          <div style="margin-bottom:20px;">
+            <h4 style="color:var(--gold);">Mission</h4>
+            <p>${about.mission}</p>
+          </div>
+          <div style="margin-bottom:20px;">
+            <h4 style="color:var(--gold);">History</h4>
+            <p>${about.history}</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Team Members</h3>
+            <button class="btn btn-primary" onClick=${() => setModal({type:'team'})}>+ Add Team Member</button>
+          </div>
+          <div class="items-grid">
+            ${about.team.map(m => html`
+              <div class="item-card">
+                <div class="item-card-header">
+                  <h4 class="item-card-title">${m.name}</h4>
+                  <p class="item-card-subtitle">${m.position}</p>
+                </div>
+                <div class="item-card-body">
+                  ${m.photo && html`<img src=${m.photo} alt=${m.name} style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px;" />`}
+                  <p class="item-card-text">${m.desc}</p>
+                </div>
+                <div class="item-card-actions">
+                  <button class="btn btn-secondary btn-sm" onClick=${() => setModal({type:'team',data:m})}>Edit</button>
+                  <button class="btn btn-danger btn-sm" onClick=${() => handleDelete('team', m.id, m.name)}>Delete</button>
+                </div>
+              </div>
+            `)}
+          </div>
+        </div>
+      `;
+
+      const ServiceModal = ({data}) => {
+        const [selectedService, setSelectedService] = useState(null);
+        const [form, setForm] = useState(data || {title:'',description:'',category:'',icon:''});
+        
+        useEffect(() => {
+          if (data) {
+            const predefined = PREDEFINED_SERVICES.find(s => s.title === data.title);
+            if (predefined) setSelectedService(predefined);
+          }
+        }, [data]);
+        
+        const selectPredefinedService = (service) => {
+          setSelectedService(service);
+          setForm({
+            title: service.title,
+            description: service.description,
+            category: service.category,
+            icon: service.icon
+          });
+        };
+        
+        const save = async (e) => {
+          e.preventDefault();
+          
+          setConfirmDialog({
+            title: `${data ? 'Update' : 'Add'} Service?`,
+            message: `Are you sure you want to ${data ? 'update' : 'add'} this service?`,
+            onConfirm: async () => {
+              try {
+                if(data) {
+                  await fetch(`/api/services/${data.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(form)
+                  });
+                  showToast('Service updated successfully', 'success');
+                } else {
+                  await fetch(`/api/services`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(form)
+                  });
+                  showToast('Service added successfully', 'success');
+                }
+                await fetchAllData();
+                setModal(null);
+              } catch (error) {
+                showToast('Error saving service', 'error');
+              } finally {
+                setConfirmDialog(null);
+              }
+            },
+            onCancel: () => setConfirmDialog(null)
+          });
+        };
+        
+        return html`
+          <div class="modal-overlay" onClick=${()=>setModal(null)}>
+            <div class="modal" onClick=${e=>e.stopPropagation()}>
+              <h3>${data?'Edit':'Add'} Service</h3>
+              <form onSubmit=${save}>
+                ${!data && html`
+                  <div class="form-group">
+                    <label>Select Service Type</label>
+                    <div class="service-selector">
+                      ${PREDEFINED_SERVICES.map(service => html`
+                        <div 
+                          class="service-option ${selectedService?.title === service.title ? 'selected' : ''}"
+                          onClick=${() => selectPredefinedService(service)}
+                        >
+                          <div class="service-icon">${service.icon}</div>
+                          <div class="service-name">${service.title}</div>
+                        </div>
+                      `)}
+                    </div>
+                  </div>
+                `}
+                <div class="form-group">
+                  <label>Title</label>
+                  <input required value=${form.title} onInput=${e=>setForm({...form,title:e.target.value})} />
+                </div>
+                <div class="form-group">
+                  <label>Category</label>
+                  <input required value=${form.category} onInput=${e=>setForm({...form,category:e.target.value})} />
+                </div>
+                <div class="form-group">
+                  <label>Icon (Emoji)</label>
+                  <input value=${form.icon} onInput=${e=>setForm({...form,icon:e.target.value})} placeholder="⚙️" />
+                </div>
+                <div class="form-group">
+                  <label>Description</label>
+                  <textarea required value=${form.description} onInput=${e=>setForm({...form,description:e.target.value})}></textarea>
+                </div>
+                <div class="modal-actions">
+                  <button type="button" class="btn btn-secondary" onClick=${()=>setModal(null)}>Cancel</button>
+                  <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      };
+
+      const FAQModal = ({data}) => {
+        const [form, setForm] = useState(data || {question:'',answer:''});
+        const save = async (e) => {
+          e.preventDefault();
+          
+          setConfirmDialog({
+            title: `${data ? 'Update' : 'Add'} FAQ?`,
+            message: `Are you sure you want to ${data ? 'update' : 'add'} this FAQ?`,
+            onConfirm: async () => {
+              try {
+                if(data) {
+                  await fetch(`/api/faqs/${data.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(form)
+                  });
+                  showToast('FAQ updated successfully', 'success');
+                } else {
+                  await fetch(`/api/faqs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(form)
+                  });
+                  showToast('FAQ added successfully', 'success');
+                }
+                await fetchAllData();
+                setModal(null);
+              } catch (error) {
+                showToast('Error saving FAQ', 'error');
+              } finally {
+                setConfirmDialog(null);
+              }
+            },
+            onCancel: () => setConfirmDialog(null)
+          });
+        };
+        return html`
+          <div class="modal-overlay" onClick=${()=>setModal(null)}>
+            <div class="modal" onClick=${e=>e.stopPropagation()}>
+              <h3>${data?'Edit':'Add'} FAQ</h3>
+              <form onSubmit=${save}>
+                <div class="form-group">
+                  <label>Question</label>
+                  <input required value=${form.question} onInput=${e=>setForm({...form,question:e.target.value})} />
+                </div>
+                <div class="form-group">
+                  <label>Answer</label>
+                  <textarea required value=${form.answer} onInput=${e=>setForm({...form,answer:e.target.value})}></textarea>
+                </div>
+                <div class="modal-actions">
+                  <button type="button" class="btn btn-secondary" onClick=${()=>setModal(null)}>Cancel</button>
+                  <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      };
+
+      const GalleryModal = ({data,mediaType}) => {
+        const [form, setForm] = useState(data || {url:'',title:''});
+        const [files, setFiles] = useState([]);
+        const [preview, setPreview] = useState(data?.url || '');
+        const [fileError, setFileError] = useState('');
+        const [multiple, setMultiple] = useState(!data); // Allow multiple files only when adding (not editing)
+        
+        const handleFileChange = (e) => {
+          const selectedFiles = Array.from(e.target.files);
+          setFileError('');
+          
+          // Clear previous files if editing single item
+          if (data) {
+            setFiles(selectedFiles.slice(0, 1));
+          } else {
+            setFiles(selectedFiles);
+          }
+          
+          // Show preview for first file
+          if (selectedFiles.length > 0) {
+            const firstFile = selectedFiles[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setPreview(reader.result);
+            };
+            reader.readAsDataURL(firstFile);
+          } else {
+            setPreview(data?.url || '');
+          }
+        };
+        
+        const save = async (e) => {
+          e.preventDefault();
+          
+          setConfirmDialog({
+            title: `${data ? 'Update' : 'Add'} ${mediaType === 'photo' ? 'Photo' : 'Video'}?`,
+            message: `Are you sure you want to ${data ? 'update' : 'add'} this ${mediaType}?`,
+            onConfirm: async () => {
+              setUploading(true);
+              try {
+                let urls = [];
+                
+                if (files.length > 0) {
+                  // Validate all files first
+                  files.forEach(file => {
+                    const fileType = file.type.startsWith('image/') ? 'image' : 'video';
+                    validateFileSize(file, fileType);
+                  });
+                  
+                  // Upload multiple files
+                  const uploadResults = await uploadMultipleFiles(files);
+                  urls = uploadResults.map(result => result.url);
+                  
+                  // If editing single item, use first URL
+                  if (data) {
+                    form.url = urls[0];
+                  } else {
+                    // For multiple files, create multiple gallery items
+                    for (let i = 0; i < urls.length; i++) {
+                      const endpoint = mediaType === 'photo' ? 'photos' : 'videos';
+                      const payload = { ...form, url: urls[i] };
+                      
+                      await fetch(`/api/gallery/${endpoint}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                      });
+                    }
+                    
+                    showToast(`${files.length} ${mediaType === 'photo' ? 'photos' : 'videos'} added successfully`, 'success');
+                    await fetchAllData();
+                    setModal(null);
+                    return;
+                  }
+                }
+                
+                // For single item updates
+                const endpoint = mediaType === 'photo' ? 'photos' : 'videos';
+                const payload = { ...form };
+                
+                if(data) {
+                  await fetch(`/api/gallery/${endpoint}/${data.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                  });
+                  showToast(`${mediaType === 'photo' ? 'Photo' : 'Video'} updated successfully`, 'success');
+                } else if (urls.length === 1) {
+                  // Single file upload
+                  payload.url = urls[0];
+                  await fetch(`/api/gallery/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                  });
+                  showToast(`${mediaType === 'photo' ? 'Photo' : 'Video'} added successfully`, 'success');
+                }
+                
+                await fetchAllData();
+                setModal(null);
+              } catch (error) {
+                showToast(error.message || 'Error saving media', 'error');
+              } finally {
+                setUploading(false);
+                setConfirmDialog(null);
+              }
+            },
+            onCancel: () => setConfirmDialog(null)
+          });
+        };
+        
+        // NEW: Progress display component
+        const ProgressDisplay = () => {
+          if (uploadProgress.length === 0) return null;
+          
+          return html`
+            <div class="upload-progress-container">
+              <h4 style="color:var(--gold);margin-bottom:12px;">Upload Progress</h4>
+              ${uploadProgress.map(item => html`
+                <div class="upload-item">
+                  <div class="upload-header">
+                    <div class="upload-filename" title=${item.filename}>${item.filename}</div>
+                    <div class="upload-percentage">${item.progress}%</div>
+                  </div>
+                  <div class="upload-progress-bar">
+                    <div class="upload-progress-fill" style=${{width: `${item.progress}%`}}></div>
+                  </div>
+                  <div class="upload-status">
+                    <span class="upload-status-text">
+                      ${item.status === 'pending' && 'Waiting...'}
+                      ${item.status === 'uploading' && 'Uploading...'}
+                      ${item.status === 'completed' && html`<span class="upload-success">✓ Uploaded</span>`}
+                      ${item.status === 'error' && html`<span class="upload-error">✗ Error: ${item.error}</span>`}
+                    </span>
+                    ${item.status === 'completed' && item.url && html`
+                      <span style="color:var(--gold);font-size:11px;">Success</span>
+                    `}
+                  </div>
+                </div>
+              `)}
+            </div>
+          `;
+        };
+        
+        // NEW: File queue display
+        const FileQueue = () => {
+          if (files.length === 0) return null;
+          
+          return html`
+            <div class="file-queue">
+              <div style="font-size:12px;color:var(--gold);margin-bottom:4px;">Selected Files (${files.length}):</div>
+              ${files.map((file, index) => html`
+                <div class="file-queue-item" key=${index}>
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%;">
+                    ${file.name}
+                  </span>
+                  <span class="file-size">
+                    ${(file.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                </div>
+              `)}
+            </div>
+          `;
+        };
+        
+        return html`
+          <div class="modal-overlay" onClick=${()=>setModal(null)}>
+            <div class="modal" onClick=${e=>e.stopPropagation()}>
+              <h3>${data?'Edit':'Add'} ${mediaType==='photo'?'Photo':'Video'}</h3>
+              <form onSubmit=${save}>
+                <div class="form-group">
+                  <label>Title</label>
+                  <input required value=${form.title} onInput=${e=>setForm({...form,title:e.target.value})} />
+                </div>
+                <div class="form-group">
+                  <label>Upload ${mediaType==='photo'?'Photo':'Video'}</label>
+                  <div class="file-size-hint">Maximum size: ${mediaType==='photo'?'1MB':'100MB'}</div>
+                  ${!data && html`<div class="multi-file-hint">You can select multiple files</div>`}
+                  <input 
+                    type="file" 
+                    accept=${mediaType==='photo'?'image/*':'video/*'} 
+                    onChange=${handleFileChange} 
+                    multiple=${multiple}
+                  />
+                  ${fileError && html`<div class="error-text">${fileError}</div>`}
+                  ${preview && files.length <= 1 && html`
+                    <div class="photo-preview">
+                      ${mediaType==='photo' 
+                        ? html`<img src=${preview} alt="Preview" />`
+                        : html`<video src=${preview} controls />`
+                      }
+                      <p style="margin-top:8px;color:var(--muted);font-size:12px;">Preview</p>
+                    </div>
+                  `}
+                  <${FileQueue} />
+                </div>
+                ${uploadProgress.length > 0 && html`<${ProgressDisplay} />`}
+                <div class="modal-actions">
+                  <button type="button" class="btn btn-secondary" onClick=${()=>setModal(null)}>Cancel</button>
+                  <button type="submit" class="btn btn-primary" disabled=${uploading || !!fileError}>
+                    ${uploading ? 'Uploading...' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      };
+
+      const TestimonialViewModal = ({data}) => html`
+        <div class="modal-overlay" onClick=${()=>setModal(null)}>
+          <div class="modal" onClick=${e=>e.stopPropagation()}>
+            <h3>Testimonial Details</h3>
+            <div class="form-group">
+              <label>Name</label>
+              <p>${data.name}</p>
+            </div>
+            <div class="form-group">
+              <label>State</label>
+              <p>${data.state}</p>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <p>${data.date}</p>
+            </div>
+            <div class="form-group">
+              <label>Rating</label>
+              <p style="color:var(--gold);">${'★'.repeat(data.rating)}</p>
+            </div>
+            <div class="form-group">
+              <label>Testimonial</label>
+              <p>${data.text}</p>
+            </div>
+            ${data.media_url && html`
+              <div class="form-group">
+                <label>Media</label>
+                ${data.media_type==='image'?html`<img src=${data.media_url} style="max-width:100%;border-radius:8px;" />`
+                :html`<video src=${data.media_url} controls style="max-width:100%;border-radius:8px;" />`}
+              </div>
+            `}
+            <div class="form-group">
+              <label>Status</label>
+              <p><span class="badge ${data.approved?'badge-success':'badge-pending'}">${data.approved?'Approved':'Pending'}</span></p>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-secondary" onClick=${()=>setModal(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const ContactViewModal = ({data}) => html`
+        <div class="modal-overlay" onClick=${()=>setModal(null)}>
+          <div class="modal" onClick=${e=>e.stopPropagation()}>
+            <h3>Contact Message</h3>
+            <div class="form-group">
+              <label>Name</label>
+              <p>${data.name}</p>
+            </div>
+            <div class="form-group">
+              <label>Contact</label>
+              <p>${data.contact}</p>
+            </div>
+            <div class="form-group">
+              <label>State</label>
+              <p>${data.state}</p>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <p>${new Date(data.created_at).toLocaleDateString()}</p>
+            </div>
+            <div class="form-group">
+              <label>Message</label>
+              <p>${data.message}</p>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-secondary" onClick=${()=>setModal(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const QuoteViewModal = ({data}) => html`
+        <div class="modal-overlay" onClick=${()=>setModal(null)}>
+          <div class="modal" onClick=${e=>e.stopPropagation()}>
+            <h3>Quote Request Details</h3>
+            <div class="form-group">
+              <label>Full Name</label>
+              <p>${data.fullname}</p>
+            </div>
+            <div class="form-group">
+              <label>Contact</label>
+              <p>${data.contact}</p>
+            </div>
+            <div class="form-group">
+              <label>State</label>
+              <p>${data.state}</p>
+            </div>
+            <div class="form-group">
+              <label>Service Requested</label>
+              <p>${data.service}</p>
+            </div>
+            <div class="form-group">
+              <label>Extra Services</label>
+              <p>${data.extras && data.extras.length>0?data.extras.join(', '):'None selected'}</p>
+            </div>
+            <div class="form-group">
+              <label>Preferred Installation Date</label>
+              <p>${data.date || 'Not specified'}</p>
+            </div>
+            <div class="form-group">
+              <label>Submitted On</label>
+              <p>${new Date(data.created_at).toLocaleDateString()}</p>
+            </div>
+            <div class="form-group">
+              <label>Additional Details</label>
+              <p>${data.details||'No additional details provided'}</p>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-secondary" onClick=${()=>setModal(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const AboutContentModal = ({data}) => {
+        const [form, setForm] = useState(data);
+        const save = async (e) => {
+          e.preventDefault();
+          
+          setConfirmDialog({
+            title: 'Update About Content?',
+            message: 'Are you sure you want to update the about page content?',
+            onConfirm: async () => {
+              try {
+                await fetch(`/api/about`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ mission: form.mission, history: form.history })
+                });
+                await fetchAllData();
+                setModal(null);
+                showToast('About content updated successfully', 'success');
+              } catch (error) {
+                showToast('Error saving content', 'error');
+              } finally {
+                setConfirmDialog(null);
+              }
+            },
+            onCancel: () => setConfirmDialog(null)
+          });
+        };
+        return html`
+          <div class="modal-overlay" onClick=${()=>setModal(null)}>
+            <div class="modal" onClick=${e=>e.stopPropagation()}>
+              <h3>Edit About Content</h3>
+              <form onSubmit=${save}>
+                <div class="form-group">
+                  <label>Mission</label>
+                  <textarea required value=${form.mission} onInput=${e=>setForm({...form,mission:e.target.value})}></textarea>
+                </div>
+                <div class="form-group">
+                  <label>History</label>
+                  <textarea required value=${form.history} onInput=${e=>setForm({...form,history:e.target.value})}></textarea>
+                </div>
+                <div class="modal-actions">
+                  <button type="button" class="btn btn-secondary" onClick=${()=>setModal(null)}>Cancel</button>
+                  <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      };
+
+      const TeamModal = ({data}) => {
+        const [form, setForm] = useState(data || {name:'',position:'',desc:'',photo:''});
+        const [photoFile, setPhotoFile] = useState(null);
+        const [photoPreview, setPhotoPreview] = useState(data?.photo || '');
+        const [fileError, setFileError] = useState('');
+        
+        const handleFileChange = (e) => {
+          const file = e.target.files[0];
+          setFileError('');
+          
+          if (file) {
+            try {
+              validateFileSize(file, 'image');
+              setPhotoFile(file);
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                setPhotoPreview(reader.result);
+              };
+              reader.readAsDataURL(file);
+            } catch (error) {
+              setFileError(error.message);
+              setPhotoFile(null);
+              setPhotoPreview(data?.photo || '');
+            }
+          }
+        };
+        
+        // NEW: Progress display for single file
+        const ProgressDisplay = () => {
+          if (uploadProgress.length === 0) return null;
+          
+          const item = uploadProgress[0];
+          return html`
+            <div class="upload-progress-container">
+              <h4 style="color:var(--gold);margin-bottom:12px;">Upload Progress</h4>
+              <div class="upload-item">
+                <div class="upload-header">
+                  <div class="upload-filename" title=${item.filename}>${item.filename}</div>
+                  <div class="upload-percentage">${item.progress}%</div>
+                </div>
+                <div class="upload-progress-bar">
+                  <div class="upload-progress-fill" style=${{width: `${item.progress}%`}}></div>
+                </div>
+                <div class="upload-status">
+                  <span class="upload-status-text">
+                    ${item.status === 'pending' && 'Waiting...'}
+                    ${item.status === 'uploading' && 'Uploading...'}
+                    ${item.status === 'completed' && html`<span class="upload-success">✓ Uploaded</span>`}
+                    ${item.status === 'error' && html`<span class="upload-error">✗ Error: ${item.error}</span>`}
+                  </span>
+                  ${item.status === 'completed' && item.url && html`
+                    <span style="color:var(--gold);font-size:11px;">Success</span>
+                  `}
+                </div>
+              </div>
+            </div>
+          `;
+        };
+        
+        const save = async (e) => {
+          e.preventDefault();
+          
+          setConfirmDialog({
+            title: `${data ? 'Update' : 'Add'} Team Member?`,
+            message: `Are you sure you want to ${data ? 'update' : 'add'} this team member?`,
+            onConfirm: async () => {
+              setUploading(true);
+              try {
+                let photoUrl = form.photo;
+                
+                if (photoFile) {
+                  // Use the new upload function with progress tracking
+                  const uploadResults = await uploadMultipleFiles([photoFile]);
+                  if (uploadResults.length > 0 && uploadResults[0].url) {
+                    photoUrl = uploadResults[0].url;
+                  }
+                }
+                
+                const teamData = { ...form, photo: photoUrl };
+                
+                if(data) {
+                  await fetch(`/api/team/${data.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(teamData)
+                  });
+                  showToast('Team member updated successfully', 'success');
+                } else {
+                  await fetch(`/api/team`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(teamData)
+                  });
+                  showToast('Team member added successfully', 'success');
+                }
+                await fetchAllData();
+                setModal(null);
+              } catch (error) {
+                showToast(error.message || 'Error saving team member', 'error');
+              } finally {
+                setUploading(false);
+                setConfirmDialog(null);
+              }
+            },
+            onCancel: () => setConfirmDialog(null)
+          });
+        };
+        
+        return html`
+          <div class="modal-overlay" onClick=${()=>setModal(null)}>
+            <div class="modal" onClick=${e=>e.stopPropagation()}>
+              <h3>${data?'Edit':'Add'} Team Member</h3>
+              <form onSubmit=${save}>
+                <div class="form-group">
+                  <label>Name</label>
+                  <input required value=${form.name} onInput=${e=>setForm({...form,name:e.target.value})} />
+                </div>
+                <div class="form-group">
+                  <label>Position</label>
+                  <input required value=${form.position} onInput=${e=>setForm({...form,position:e.target.value})} />
+                </div>
+                <div class="form-group">
+                  <label>Description</label>
+                  <textarea required value=${form.desc} onInput=${e=>setForm({...form,desc:e.target.value})}></textarea>
+                </div>
+                <div class="form-group">
+                  <label>Upload Photo</label>
+                  <div class="file-size-hint">Maximum size: 1MB</div>
+                  <input type="file" accept="image/*" onChange=${handleFileChange} />
+                  ${fileError && html`<div class="error-text">${fileError}</div>`}
+                  ${photoPreview && html`
+                    <div class="photo-preview">
+                      <img src=${photoPreview} alt="Preview" />
+                      <p style="margin-top:8px;color:var(--muted);font-size:12px;">Photo Preview</p>
+                    </div>
+                  `}
+                </div>
+                ${uploadProgress.length > 0 && html`<${ProgressDisplay} />`}
+                <div class="modal-actions">
+                  <button type="button" class="btn btn-secondary" onClick=${()=>setModal(null)}>Cancel</button>
+                  <button type="submit" class="btn btn-primary" disabled=${uploading || !!fileError}>
+                    ${uploading ? 'Uploading...' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      };
+
+      const ConfirmDialog = ({title, message, onConfirm, onCancel}) => html`
+        <div class="modal-overlay" onClick=${onCancel}>
+          <div class="confirm-dialog" onClick=${e=>e.stopPropagation()}>
+            <h4>${title}</h4>
+            <p>${message}</p>
+            <div class="confirm-actions">
+              <button class="btn btn-secondary" onClick=${onCancel}>Cancel</button>
+              <button class="btn btn-primary" onClick=${onConfirm}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const Toast = ({message, type}) => html`
+        <div class="toast ${type}">${message}</div>
+      `;
+
+      return html`
+        <div class="app">
+          <${Sidebar} />
+          <main class="main-content">
+            <div class="header">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <button class="hamburger" onClick=${() => setSidebarOpen(!sidebarOpen)}>☰</button>
+                <h1>${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
+              </div>
+              <div class="header-actions">
+                <a href="/" class="btn btn-secondary">View Site</a>
+              </div>
+            </div>
+            
+            ${activeTab==='overview' && html`<${Overview} />`}
+            ${activeTab==='services' && html`<${ServicesTab} />`}
+            ${activeTab==='faqs' && html`<${FAQsTab} />`}
+            ${activeTab==='gallery' && html`<${GalleryTab} />`}
+            ${activeTab==='testimonials' && html`<${TestimonialsTab} />`}
+            ${activeTab==='contacts' && html`<${ContactsTab} />`}
+            ${activeTab==='quotes' && html`<${QuotesTab} />`}
+            ${activeTab==='about' && html`<${AboutTab} />`}
+          </main>
+          
+          ${modal?.type==='service' && html`<${ServiceModal} data=${modal.data} />`}
+          ${modal?.type==='faq' && html`<${FAQModal} data=${modal.data} />`}
+          ${modal?.type==='gallery' && html`<${GalleryModal} data=${modal.data} mediaType=${modal.mediaType} />`}
+          ${modal?.type==='testimonial' && html`<${TestimonialViewModal} data=${modal.data} />`}
+          ${modal?.type==='contact' && html`<${ContactViewModal} data=${modal.data} />`}
+          ${modal?.type==='quote' && html`<${QuoteViewModal} data=${modal.data} />`}
+          ${modal?.type==='about-content' && html`<${AboutContentModal} data=${modal.data} />`}
+          ${modal?.type==='team' && html`<${TeamModal} data=${modal.data} />`}
+          
+          ${confirmDialog && html`<${ConfirmDialog} ...${confirmDialog} />`}
+          ${toast && html`<${Toast} ...${toast} />`}
+        </div>
+      `;
+    }
+
+    render(html`<${Dashboard} />`, document.getElementById('app'));
+  </script>
+</body>
+</html>
