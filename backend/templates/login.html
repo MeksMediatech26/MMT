@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Login – Meks Media Tech</title>
+
+<style>
+:root { --accent: #A6700C; }
+body { margin:0; background:#000; color:#fff; font-family:Arial, sans-serif; line-height:1.7; }
+header { display:flex; justify-content:space-between; align-items:center; padding:1rem; background:#111; border-bottom:1px solid var(--accent);}
+header img { height:42px; }
+.hamburger { font-size:30px; cursor:pointer; color:var(--accent); font-weight:bold; }
+
+.sidebar { position:fixed; top:0; left:-260px; width:260px; height:100vh; background:#111; border-right:2px solid var(--accent); transition:left .33s ease; padding-top:60px; z-index:2000;}
+.sidebar.open { left:0; }
+.sidebar a { display:block; padding:1rem; color:#fff; text-decoration:none; border-bottom:1px solid #222; }
+.sidebar a:hover { background:var(--accent); }
+
+footer { margin-top:3rem; padding:1.2rem; background:#111; border-top:1px solid var(--accent); text-align:center; color:#ccc; }
+footer a { color:var(--accent); margin:0 8px; text-decoration:none; }
+
+.login-container { margin:auto; margin-top:60px; max-width:330px; background:#111; padding:25px; border-radius:10px; border:1px solid var(--accent);}
+.login-container h2 { text-align:center; margin-top:0; color:var(--accent);}
+.login-container input { width:100%; padding:10px; margin:10px 0; border:none; border-radius:5px;}
+.login-container button { width:100%; padding:12px; background:var(--accent); border:none; font-weight:bold; font-size:16px; border-radius:5px; cursor:pointer;}
+.login-container button:hover { opacity:0.85;}
+</style>
+
+<script src="https://unpkg.com/preact@10.19.3/dist/preact.umd.js"></script>
+<script src="https://unpkg.com/preact@10.19.3/hooks/dist/hooks.umd.js"></script>
+</head>
+<body>
+
+<header>
+    <div class="hamburger" onclick="openSidebar()">☰</div>
+    <img src="../assets/logo.png" alt="Meks Media Tech"/>
+</header>
+
+<div id="sidebar" class="sidebar">
+    <a href="/">Home</a>
+    <a href="/about">About</a>
+    <a href="/services">Services</a>
+    <a href="/gallery">Gallery</a>
+    <a href="/testimonial.html">Testimonials</a>
+    <a href="/contact.html">Contact</a>
+</div>
+
+<div id="app"></div>
+
+<footer>
+    <a href="../">Home</a>
+    <a href="/about">About</a>
+    <a href="/services">Services</a>
+    <a href="/gallery">Gallery</a>
+    <a href="/testimonial">Testimonials</a>
+    <a href="/contact">Contact</a>
+    <p style="margin-top:8px;">© 2025 Meks Media Tech</p>
+</footer>
+
+<script>
+/* Sidebar logic */
+let sidebar = document.getElementById("sidebar");
+let sidebarTimer = null;
+function openSidebar() { sidebar.classList.add("open"); clearTimeout(sidebarTimer); sidebarTimer = setTimeout(closeSidebar, 3000);}
+function closeSidebar() { sidebar.classList.remove("open"); }
+document.body.addEventListener("click", e => { if (!sidebar.contains(e.target) && !e.target.classList.contains("hamburger")) closeSidebar(); });
+
+/* Preact Login Component */
+const { h, render } = preact;
+const { useState, useEffect } = preactHooks;
+
+const API_BASE = "https://your-domain.com"; // 🔥 Replace with your backend URL
+
+function LoginPage() {
+    const [creds, setCreds] = useState({ email:'', password:'' });
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [remember, setRemember] = useState(false);
+
+    // Auto-login if token exists & valid
+    useEffect(() => {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (token) verifyToken(token);
+    }, []);
+
+    const verifyToken = async (token) => {
+        try {
+            const res = await fetch(`/api/auth/verify`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) window.location.href = "/dashboard";
+            else localStorage.removeItem("token");
+        } catch { localStorage.removeItem("token"); sessionStorage.removeItem("token"); }
+    };
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(`/api/auth/login`, {
+                method:"POST",
+                headers:{ "Content-Type":"application/json" },
+                body:JSON.stringify(creds)
+            });
+            const data = await res.json();
+
+            if (res.ok && data.access_token) {
+                if (remember) localStorage.setItem("token", data.access_token);
+                else sessionStorage.setItem("token", data.access_token);
+                window.location.href = "/dashboard";
+            } else setError(data.detail || "Invalid credentials");
+        } catch { setError("Login failed — check network or backend"); }
+        finally { setLoading(false); }
+    };
+
+    return h("div",{ style:"display:flex;justify-content:center;" },
+        h("div",{ class:"login-container" }, [
+            h("img",{ src:"../assets/logo.png", style:"display:block;margin:auto;height:60px;margin-bottom:15px;" }),
+            h("h2", {}, "Admin Login"),
+            error && h("div",{ style:"color:red;text-align:center;margin-bottom:10px;" }, error),
+            h("form",{ onSubmit: handleLogin }, [
+                h("input",{ type:"email", placeholder:"Email", value:creds.email, required:true, onInput:e=>setCreds({...creds,email:e.target.value}) }),
+                h("input",{ type:"password", placeholder:"Password", value:creds.password, required:true, onInput:e=>setCreds({...creds,password:e.target.value}) }),
+                h("div",{ style:"margin:8px 0; display:flex; align-items:center;" },[
+                    h("input",{ type:"checkbox", id:"remember", checked:remember, onInput:e=>setRemember(e.target.checked), style:"width:auto;" }),
+                    h("label",{ for:"remember", style:"margin-left:6px;" }, "Remember me")
+                ]),
+                h("button",{ disabled:loading }, loading ? "Logging in..." : "Login")
+            ])
+        ])
+    );
+}
+
+render(h(LoginPage), document.getElementById("app"));
+</script>
+</body>
+</html>
