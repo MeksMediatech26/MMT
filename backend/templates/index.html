@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Meks Media Tech — Home</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Meks Media Tech — Professional Solar, CCTV, DSTV/GOTV installations across Nigeria" />
+  
+  <script src="https://unpkg.com/preact@10.19.3/dist/preact.umd.js"></script>
+  <script src="https://unpkg.com/preact@10.19.3/hooks/dist/hooks.umd.js"></script>
+  <script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+
+  <style>
+    :root{
+      --accent: #A6700C;
+      --accent-dark: #7B5008;
+      --bg: #000;
+      --surface: #0f0f0f;
+      --muted: #bdbdbd;
+      --card: #111;
+      --sidebar-w: 280px;
+      --max-width: 1400px;
+    }
+
+    * { box-sizing: border-box; }
+    html,body { height:100%; margin:0; background:var(--bg); color:#fff; font-family:'Segoe UI', system-ui, -apple-system, Arial; scroll-behavior:smooth; }
+    a { color:var(--accent); text-decoration:none; }
+    img,video { max-width:100%; display:block; }
+
+    /* Sidebar */
+    .sidebar {
+      position:fixed; left:0; top:0; bottom:0; width:var(--sidebar-w);
+      background:#000; border-right:2px solid var(--accent);
+      padding:20px; z-index:2000; overflow-y:auto;
+      transform: translateX(-100%); transition:transform 0.3s ease;
+    }
+    .sidebar.open { transform: translateX(0); }
+    @media(min-width:980px){ .sidebar{ transform:translateX(0); } }
+    
+    .sidebar h2 { margin:0 0 20px; font-size:22px; color:var(--accent); text-align:center; }
+    .sidebar h2 a { color:var(--accent); }
+    .nav { list-style:none; padding:0; margin:20px 0; }
+    .nav a { display:block; padding:12px 16px; color:#fff; border-radius:8px; margin-bottom:8px; transition:all 0.2s; font-weight:600; }
+    .nav a:hover, .nav a.active { background:var(--accent); color:#000; }
+
+    /* Header */
+    header.site-header {
+      position:sticky; top:0; z-index:1500;
+      background:rgba(0,0,0,0.95); backdrop-filter:blur(10px);
+      padding:16px 20px; display:flex; align-items:center; gap:16px;
+      border-bottom:1px solid rgba(166,112,12,0.3);
+    }
+    .hamburger { font-size:28px; color:var(--accent); cursor:pointer; border:none; background:transparent; padding:8px; }
+    @media(min-width:980px){ .hamburger{ display:none; } }
+    
+    .brand { display:flex; align-items:center; gap:12px; flex:1; }
+    .brand img { height:50px; border-radius:8px; }
+    .brand h1 { margin:0; font-size:20px; color:var(--accent); }
+
+    /* Main Content */
+    main.content { margin-left:0; min-height:100vh; }
+    @media(min-width:980px){ main.content{ margin-left:var(--sidebar-w); } }
+
+    .container { max-width:var(--max-width); margin:0 auto; padding:0 20px; }
+
+    /* Hero Section */
+    .hero {
+      background:linear-gradient(135deg, rgba(166,112,12,0.1), rgba(0,0,0,0.8));
+      padding:80px 20px; text-align:center; position:relative; overflow:hidden;
+    }
+    .hero::before {
+      content:''; position:absolute; inset:0;
+      background:url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1" fill="rgba(166,112,12,0.1)"/></svg>');
+      opacity:0.3;
+    }
+    .hero-content { position:relative; z-index:1; }
+    .hero h2 { font-size:clamp(32px, 5vw, 52px); margin:0 0 16px; color:var(--accent); font-weight:800; }
+    .hero p { font-size:clamp(16px, 2vw, 20px); color:var(--muted); margin:0 0 32px; }
+    .cta-btn {
+      display:inline-block; background:var(--accent); color:#000;
+      padding:14px 32px; border-radius:8px; font-weight:700;
+      transition:transform 0.2s, box-shadow 0.2s; cursor:pointer; border:none;
+    }
+    .cta-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(166,112,12,0.4); }
+
+    /* Services Grid */
+    .services-section { padding:60px 20px; background:var(--surface); }
+    .section-title { text-align:center; font-size:36px; margin-bottom:40px; color:var(--accent); }
+    .services-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:24px; }
+    .service-card {
+      background:var(--card); border:1px solid rgba(166,112,12,0.2);
+      border-radius:12px; padding:24px; cursor:pointer;
+      transition:all 0.3s; position:relative; overflow:hidden;
+    }
+    .service-card::before {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(135deg, transparent, rgba(166,112,12,0.05));
+      opacity:0; transition:opacity 0.3s;
+    }
+    .service-card:hover::before { opacity:1; }
+    .service-card:hover { transform:translateY(-4px); border-color:var(--accent); }
+    .service-card h3 { color:var(--accent); margin:0 0 12px; font-size:24px; }
+    .service-card p { color:var(--muted); line-height:1.6; margin:0; }
+
+    /* Gallery Carousel */
+    .gallery-section { padding:60px 20px; }
+    .carousel-wrapper { margin-bottom:50px; }
+    .carousel-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    .carousel-header h3 { color:var(--accent); font-size:28px; margin:0; }
+    .view-all-btn { background:var(--accent); color:#000; padding:8px 20px; border-radius:6px; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; }
+    .view-all-btn:hover { background:var(--accent-dark); }
+    .carousel-container { position:relative; overflow:hidden; margin:0 auto; max-width:1200px; }
+    .carousel-track { display:flex; transition:transform 0.5s ease; }
+    .carousel-item { flex:0 0 100%; padding:0 10px; position:relative; }
+    .carousel-item img, .carousel-item video {
+      width:100%; height:240px; object-fit:cover; border-radius:12px;
+      border:2px solid rgba(166,112,12,0.3);
+    }
+    .video-controls { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); 
+      background:rgba(0,0,0,0.8); padding:10px 20px; border-radius:8px; display:flex; gap:12px; align-items:center; z-index:10;
+    }
+    .play-pause-btn { background:var(--accent); color:#000; border:none; width:40px; height:40px;
+      border-radius:50%; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center;
+      transition:all 0.2s;
+    }
+    .play-pause-btn:hover { background:var(--accent-dark); }
+    .carousel-nav { position:absolute; top:50%; transform:translateY(-50%); 
+      background:rgba(166,112,12,0.8); border:none; color:#000;
+      width:50px; height:50px; border-radius:50%; cursor:pointer;
+      font-size:24px; font-weight:bold; transition:all 0.2s; z-index:5;
+    }
+    .carousel-nav:hover { background:var(--accent); }
+    .carousel-nav.prev { left:10px; }
+    .carousel-nav.next { right:10px; }
+    .carousel-dots { text-align:center; margin-top:20px; }
+    .carousel-dot { display:inline-block; width:12px; height:12px; border-radius:50%;
+      background:rgba(166,112,12,0.3); margin:0 6px; cursor:pointer; transition:all 0.3s;
+    }
+    .carousel-dot.active { background:var(--accent); width:32px; border-radius:6px; }
+
+    /* Testimonials */
+    .testimonials-section { padding:60px 20px; background:var(--surface); }
+    
+    /* Featured Testimonials Carousel */
+    .featured-testimonials { margin-bottom:50px; }
+    .featured-carousel-container { position:relative; overflow:hidden; max-width:1200px; margin:0 auto; }
+    .featured-carousel-track { display:flex; transition:transform 0.6s ease; }
+    .featured-carousel-item { flex:0 0 100%; padding:0 10px; }
+    
+    .testimonials-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px; max-width:1200px; margin:0 auto; }
+    .testimonial-card {
+      background:var(--card); border-left:4px solid var(--accent);
+      padding:24px; border-radius:8px;
+    }
+    .testimonial-text { font-style:italic; color:var(--muted); margin:0 0 16px; line-height:1.6; }
+    .testimonial-author { font-weight:700; color:var(--accent); margin:0; }
+    .testimonial-meta { font-size:14px; color:#888; margin:4px 0 0; }
+    .stars { color:var(--accent); font-size:18px; margin-bottom:12px; }
+    
+    .view-all-testimonials-btn {
+      display:block; margin:40px auto 0; background:var(--accent); color:#000;
+      padding:14px 32px; border-radius:8px; font-weight:700; max-width:300px;
+      text-align:center; transition:transform 0.2s, box-shadow 0.2s;
+    }
+    .view-all-testimonials-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(166,112,12,0.4); }
+
+    /* FAQ Section */
+    .faq-section { padding:60px 20px; max-width:900px; margin:0 auto; }
+    .faq-item { background:var(--card); border:1px solid rgba(166,112,12,0.2);
+      border-radius:8px; margin-bottom:16px; overflow:hidden;
+    }
+    .faq-question {
+      padding:20px; cursor:pointer; display:flex; justify-content:space-between;
+      align-items:center; font-weight:700; color:#fff; transition:all 0.2s;
+    }
+    .faq-question:hover { background:rgba(166,112,12,0.1); }
+    .faq-toggle { color:var(--accent); font-size:24px; transition:transform 0.3s; }
+    .faq-item.open .faq-toggle { transform:rotate(45deg); }
+    .faq-answer { max-height:0; overflow:hidden; transition:max-height 0.3s ease;
+      color:var(--muted); padding:0 20px;
+    }
+    .faq-item.open .faq-answer { max-height:500px; padding:0 20px 20px; }
+
+    /* Contact/Quote Section */
+    .contact-section { padding:60px 20px; background:var(--surface); }
+    .contact-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(350px, 1fr)); gap:40px; max-width:1200px; margin:0 auto; }
+    .form-group { margin-bottom:20px; }
+    .form-group label { display:block; margin-bottom:8px; color:var(--accent); font-weight:600; }
+    .form-group input, .form-group select, .form-group textarea {
+      width:100%; padding:12px; background:var(--card); border:1px solid rgba(166,112,12,0.3);
+      border-radius:6px; color:#fff; font-size:16px;
+    }
+    .form-group textarea { min-height:120px; resize:vertical; }
+    .submit-btn {
+      background:var(--accent); color:#000; border:none;
+      padding:14px 32px; border-radius:8px; font-weight:700;
+      cursor:pointer; width:100%; font-size:16px;
+      transition:all 0.2s;
+    }
+    .submit-btn:hover { background:var(--accent-dark); }
+    .submit-btn:disabled { opacity:.7; cursor:not-allowed; }
+    .collapse-header { background:#111; padding:10px; border-radius:5px; cursor:pointer; border:1px solid #333; color:var(--accent); margin-bottom:5px; text-align:center; font-weight:bold; }
+    .collapse-content { display:none; padding:10px; background:#0e0e0e; border-radius:5px; border:1px solid #222; margin-bottom:10px; word-wrap:break-word; white-space:pre-wrap; }
+    .collapse-content.open { display:block; }
+    .checkbox-wrap { display:flex; align-items:center; gap:6px; padding:4px 0; flex-wrap:wrap; }
+    .state-input-wrap { position:relative; width:100%; }
+    .state-search-results { position:absolute; top:100%; left:0; width:100%; background:#111; border:1px solid #333; border-radius:5px; max-height:180px; overflow-y:auto; display:none; z-index:50; }
+    .state-item { padding:8px; cursor:pointer; border-bottom:1px solid #222; }
+    .state-item:hover { background:var(--accent); color:black; }
+    .error-text { color: #ff4444; font-size:14px; margin-top:4px; }
+
+    /* Footer */
+    footer {
+      background:#000; border-top:2px solid var(--accent);
+      padding:40px 20px; text-align:center;
+    }
+    .footer-links { display:flex; justify-content:center; gap:24px;
+      flex-wrap:wrap; margin-bottom:20px;
+    }
+    .footer-links a { color:var(--accent); transition:color 0.2s; }
+    .footer-links a:hover { color:#fff; }
+    .social-links { display:flex; justify-content:center; gap:16px; margin:24px 0; }
+    .social-link {
+      width:44px; height:44px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(166,112,12,0.2); transition:all 0.2s;
+    }
+    .social-link:hover { background:var(--accent); }
+
+    @media(max-width:768px){
+      .services-grid, .testimonials-grid, .contact-grid { grid-template-columns:1fr; }
+      .hero { padding:60px 20px; }
+    }
+  </style>
+</head>
+
+<body>
+<div id="root"></div>
+
+<script type="module">
+const { h, render } = window.preact;
+const { useState, useEffect, useRef } = window.preactHooks;
+const html = window.htm.bind(h);
+
+const API_BASE = window.location.origin;
+
+const NIGERIA_STATES = [
+  "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno","Cross River",
+  "Delta","Ebonyi","Edo","Ekiti","Enugu","Gombe","Imo","Jigawa","Kaduna","Kano","Katsina",
+  "Kebbi","Kogi","Kwara","Lagos","Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau",
+  "Rivers","Sokoto","Taraba","Yobe","Zamfara","FCT Abuja"
+];
+
+function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [services, setServices] = useState([]);
+  const [faqs, setFaqs] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
+  const [videos, setVideos] = useState([]);
+  const [photos, setPhotos] = useState([]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [servicesRes, faqsRes, testimonialsRes, galleryRes] = await Promise.all([
+        fetch(`/api/services`).then(r => r.json()).catch(() => []),
+        fetch(`/api/faqs`).then(r => r.json()).catch(() => []),
+        fetch(`/api/testimonials`).then(r => r.json()).catch(() => []),
+        fetch(`/api/gallery`).then(r => r.json()).catch(() => ({ photos: [], videos: [] }))
+      ]);
+      
+      setServices(servicesRes);
+      setFaqs(faqsRes);
+      setTestimonials(testimonialsRes.filter(t => t.approved));
+      setVideos(galleryRes.videos.slice(0, 3));
+      setPhotos(galleryRes.photos.slice(0, 5));
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sidebarOpen && !e.target.closest('.sidebar') && !e.target.closest('.hamburger')) {
+        setSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [sidebarOpen]);
+
+  const scrollToContact = () => {
+    const contactSection = document.getElementById('contact');
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  return html`
+    <div>
+      <${Sidebar} active=${sidebarOpen} onClose=${() => setSidebarOpen(false)} />
+      <main class="content">
+        <${Header} onMenuClick=${() => setSidebarOpen(!sidebarOpen)} />
+        <${Hero} onCtaClick=${scrollToContact} />
+        <${Services} services=${services} />
+        <${Gallery} videos=${videos} photos=${photos} />
+        <${Testimonials} testimonials=${testimonials} />
+        <${FAQ} faqs=${faqs} />
+        <${ContactForm} services=${services} />
+        <${Footer} />
+      </main>
+    </div>
+  `;
+}
+
+function Sidebar({active, onClose}) {
+  const pages = [
+    { name: 'Home', href: '/' },
+    { name: 'About', href: '/about' },
+    { name: 'Services', href: '/services' },
+    { name: 'Gallery', href: '/gallery' },
+    { name: 'Testimonials', href: '/testimonials' },
+    { name: 'Contact', href: '/contact' }
+  ];
+  
+  useEffect(() => {
+    let timer;
+    if (active) {
+      timer = setTimeout(() => {
+        onClose();
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [active, onClose]);
+  
+  return html`
+    <aside class="sidebar ${active?'open':''}" onClick=${(e) => e.stopPropagation()}>
+      <h2><a href="index">Meks Media Tech</a></h2>
+      <nav class="nav">
+        ${pages.map(page => html`
+          <a href="${page.href}" 
+             class=${page.name==='Home'?'active':''}>
+            ${page.name}
+          </a>
+        `)}
+      </nav>
+    </aside>
+  `;
+}
+
+function Header({onMenuClick}) {
+  return html`
+    <header class="site-header">
+      <button class="hamburger" onClick=${onMenuClick}>☰</button>
+      <div class="brand">
+        <img src="/assets/logo.png" alt="Meks Media Tech" />
+        <h1>Meks Media Tech</h1>
+      </div>
+    </header>
+  `;
+}
+
+function Hero({onCtaClick}) {
+  return html`
+    <section class="hero" id="home">
+      <div class="hero-content container">
+        <h2>Professional Solar • CCTV • Satellite Solutions</h2>
+        <p>Fast, reliable and affordable installations across Nigeria</p>
+        <button onClick=${onCtaClick} class="cta-btn">Get Free Quote</button>
+      </div>
+    </section>
+  `;
+}
+
+function Services({services}) {
+  return html`
+    <section class="services-section" id="services">
+      <div class="container">
+        <h2 class="section-title">Our Services</h2>
+        <div class="services-grid">
+          ${services.map(service => html`
+            <div class="service-card">
+              <div style="font-size:48px;margin-bottom:16px;">${service.icon || '⚙️'}</div>
+              <h3>${service.title}</h3>
+              <p>${service.description}</p>
+            </div>
+          `)}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function VideoCarousel({videos}) {
+  const [index, setIndex] = useState(0);
+  const [playing, setPlaying] = useState({});
+  const videoRefs = useRef({});
+
+  useEffect(() => {
+    if (videos.length === 0) return;
+    const timer = setInterval(() => {
+      setIndex(i => (i + 1) % videos.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [videos.length]);
+
+  const navigate = (dir) => {
+    setIndex(i => dir > 0 ? (i + 1) % videos.length : (i - 1 + videos.length) % videos.length);
+  };
+
+  const togglePlay = (idx) => {
+    const video = videoRefs.current[idx];
+    if (!video) return;
+
+    Object.keys(videoRefs.current).forEach(key => {
+      if (key !== String(idx) && videoRefs.current[key]) {
+        videoRefs.current[key].pause();
+        setPlaying(prev => ({ ...prev, [key]: false }));
+      }
+    });
+
+    if (playing[idx]) {
+      video.pause();
+      setPlaying(prev => ({ ...prev, [idx]: false }));
+    } else {
+      video.play();
+      setPlaying(prev => ({ ...prev, [idx]: true }));
+    }
+  };
+
+  if (videos.length === 0) return null;
+
+  return html`
+    <div class="carousel-wrapper">
+      <div class="carousel-header container">
+        <h3>Recent Videos</h3>
+        <a href="gallery" class="view-all-btn">View All Videos</a>
+      </div>
+      <div class="carousel-container">
+        <div class="carousel-track" style="transform: translateX(${-index * 100}%)">
+          ${videos.map((video, i) => html`
+            <div class="carousel-item" key=${i}>
+              <video 
+                ref=${el => videoRefs.current[i] = el}
+                src=${video.url}
+                style="width:100%; height:240px; object-fit:cover; border-radius:12px; border:2px solid rgba(166,112,12,0.3);"
+              />
+              <div class="video-controls">
+                <button class="play-pause-btn" onClick=${() => togglePlay(i)}>
+                  ${playing[i] ? '⏸' : '▶'}
+                </button>
+                <span style="color:#fff;font-size:14px;">${video.title}</span>
+              </div>
+            </div>
+          `)}
+        </div>
+        <button class="carousel-nav prev" onClick=${() => navigate(-1)}>‹</button>
+        <button class="carousel-nav next" onClick=${() => navigate(1)}>›</button>
+      </div>
+      <div class="carousel-dots">
+        ${videos.map((_, i) => html`
+          <span class="carousel-dot ${i===index?'active':''}" 
+                onClick=${() => setIndex(i)}></span>
+        `)}
+      </div>
+    </div>
+  `;
+}
+
+function PhotoCarousel({photos}) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (photos.length === 0) return;
+    const timer = setInterval(() => {
+      setIndex(i => (i - 1 + photos.length) % photos.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [photos.length]);
+
+  const navigate = (dir) => {
+    setIndex(i => dir > 0 ? (i + 1) % photos.length : (i - 1 + photos.length) % photos.length);
+  };
+
+  if (photos.length === 0) return null;
+
+  return html`
+    <div class="carousel-wrapper">
+      <div class="carousel-header container">
+        <h3>Recent Photos</h3>
+        <a href="gallery.html" class="view-all-btn">View All Photos</a>
+      </div>
+      <div class="carousel-container">
+        <div class="carousel-track" style="transform: translateX(${-index * 100}%)">
+          ${photos.map((photo, i) => html`
+            <div class="carousel-item" key=${i}>
+              <img src=${photo.url} alt=${photo.title} style="height:240px;" />
+            </div>
+          `)}
+        </div>
+        <button class="carousel-nav prev" onClick=${() => navigate(-1)}>‹</button>
+        <button class="carousel-nav next" onClick=${() => navigate(1)}>›</button>
+      </div>
+      <div class="carousel-dots">
+        ${photos.map((_, i) => html`
+          <span class="carousel-dot ${i===index?'active':''}" 
+                onClick=${() => setIndex(i)}></span>
+        `)}
+      </div>
+    </div>
+  `;
+}
+
+function Gallery({videos, photos}) {
+  return html`
+    <section class="gallery-section" id="gallery">
+      <div class="container">
+        <h2 class="section-title">Our Work</h2>
+      </div>
+      <${VideoCarousel} videos=${videos} />
+      <${PhotoCarousel} photos=${photos} />
+    </section>
+  `;
+}
+
+function FeaturedTestimonialsCarousel({testimonials}) {
+  const [index, setIndex] = useState(0);
+  const sortedTestimonials = [...testimonials].sort((a, b) => 
+    new Date(b.created_at || b.date) - new Date(a.created_at || a.date)
+  ).slice(0, 5);
+
+  useEffect(() => {
+    if (sortedTestimonials.length === 0) return;
+    const timer = setInterval(() => {
+      setIndex(i => (i + 1) % sortedTestimonials.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [sortedTestimonials.length]);
+
+  if (sortedTestimonials.length === 0) return null;
+
+  return html`
+    <div class="featured-testimonials">
+      <h3 style="text-align:center; color:var(--accent); font-size:28px; margin-bottom:30px;">Testimonials</h3>
+      <div class="featured-carousel-container">
+        <div class="featured-carousel-track" style="transform: translateX(${-index * 100}%)">
+          ${sortedTestimonials.map((t, i) => html`
+            <div class="featured-carousel-item" key=${i}>
+              <div class="testimonial-card" style="max-width:800px; margin:0 auto;">
+                <div style="text-align:center; margin-bottom:16px;">
+                  ${t.photo_url && html`<img src=${t.photo_url} alt=${t.name} style="width:80px; height:80px; border-radius:50%; margin:0 auto; object-fit:cover;" />`}
+                </div>
+                <div class="stars" style="text-align:center;">${'★'.repeat(t.rating)}</div>
+                <p class="testimonial-text" style="text-align:center;">"${t.text}"</p>
+                <p class="testimonial-author" style="text-align:center;">${t.name}</p>
+                <p class="testimonial-meta" style="text-align:center;">${t.location || t.state} • ${new Date(t.created_at || t.date).toLocaleDateString()}</p>
+              </div>
+            </div>
+          `)}
+        </div>
+      </div>
+      <div class="carousel-dots">
+        ${sortedTestimonials.map((_, i) => html`
+          <span class="carousel-dot ${i===index?'active':''}" 
+                onClick=${() => setIndex(i)}></span>
+        `)}
+      </div>
+    </div>
+  `;
+}
+
+function Testimonials({testimonials}) {
+  return html`
+    <section class="testimonials-section" id="testimonials">
+      <div class="container">
+        <h2 class="section-title">Client Testimonials</h2>
+        <${FeaturedTestimonialsCarousel} testimonials=${testimonials} />
+        <a href="testimonials" class="view-all-testimonials-btn">View All Reviews</a>
+      </div>
+    </section>
+  `;
+}
+
+function FAQ({faqs}) {
+  const [openIndex, setOpenIndex] = useState(null);
+
+  return html`
+    <section class="faq-section">
+      <div class="container">
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        ${faqs.map((faq, i) => html`
+          <div class="faq-item ${openIndex===i?'open':''}" 
+               onClick=${() => setOpenIndex(openIndex===i?null:i)}>
+            <div class="faq-question">
+              <span>${faq.question || faq.q}</span>
+              <span class="faq-toggle">+</span>
+            </div>
+            <div class="faq-answer">${faq.answer || faq.a}</div>
+          </div>
+        `)}
+      </div>
+    </section>
+  `;
+}
+
+function StateSelector({ value, onSelect }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const filtered = NIGERIA_STATES.filter(s => s.toLowerCase().includes(query.toLowerCase()));
+  
+  return html`
+    <div class="state-input-wrap">
+      <input 
+        type="text" 
+        value=${value || query} 
+        placeholder="Select State" 
+        onInput=${e => { setQuery(e.target.value); setOpen(true); }} 
+        onFocus=${() => setOpen(true)} 
+        style="cursor:text;" 
+      />
+      <div class="state-search-results" style="display:${open ? 'block' : 'none'}">
+        ${filtered.map(st => html`
+          <div 
+            class="state-item" 
+            onClick=${() => { onSelect(st); setQuery(st); setOpen(false); }}
+          >
+            ${st}
+          </div>
+        `)}
+      </div>
+    </div>
+  `;
+}
+
+function ContactForm({services}) {
+  const [quoteData, setQuoteData] = useState({
+    fullname: '', contact: '', service: '', extras: [], date: '', details: '', state: ''
+  });
+  const [collapseOpen, setCollapseOpen] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+
+  function isValidContact(value) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(?:\+?\d{1,3})?[ -]?\d{7,14}$/;
+    return emailRegex.test(value) || phoneRegex.test(value);
+  }
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!quoteData.fullname.trim()) {
+      newErrors.fullname = 'Full name is required';
+    }
+    
+    if (!quoteData.contact.trim()) {
+      newErrors.contact = 'Contact is required';
+    } else if (!isValidContact(quoteData.contact)) {
+      newErrors.contact = 'Please enter a valid email or phone number';
+    }
+    
+    if (!quoteData.state) {
+      newErrors.state = 'State is required';
+    }
+    
+    if (!quoteData.service) {
+      newErrors.service = 'Service selection is required';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setSubmitting(true);
+    
+    try {
+      // Create FormData object
+      const formData = new FormData();
+      formData.append('fullname', quoteData.fullname);
+      formData.append('contact', quoteData.contact);
+      formData.append('service', quoteData.service);
+      formData.append('state', quoteData.state);
+      formData.append('date', quoteData.date);
+      formData.append('details', quoteData.details);
+      
+      // Append each extra requirement individually
+      quoteData.extras.forEach(extra => {
+        formData.append('extras', extra);
+      });
+      
+      // Submit using FormData (no Content-Type header needed - browser sets it automatically)
+      const res = await fetch(`${API_BASE}/api/quote`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (res.ok) {
+        alert('Quote submitted successfully! We will contact you soon.');
+        setQuoteData({ fullname: '', contact: '', service: '', extras: [], date: '', details: '', state: '' });
+        setErrors({});
+      } else {
+        alert('Failed to submit quote. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error submitting quote. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return html`
+    <section class="contact-section" id="contact">
+      <div class="container">
+        <h2 class="section-title">Request a Quote</h2>
+        <p style="text-align:center;color:#ccc;margin-bottom:40px;">Get pricing for installations & services.</p>
+        
+        <div class="contact-grid">
+          <form onSubmit=${handleSubmit}>
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input 
+                name="fullname"
+                value=${quoteData.fullname}
+                onInput=${e => setQuoteData({ ...quoteData, fullname: e.target.value })}
+                style=${errors.fullname ? 'border-color:#ff4444;' : ''}
+              />
+              ${errors.fullname && html`<div class="error-text">${errors.fullname}</div>`}
+            </div>
+
+            <div class="form-group">
+              <label>Contact (Email or Phone Number) *</label>
+              <input 
+                name="contact"
+                value=${quoteData.contact}
+                onInput=${e => setQuoteData({ ...quoteData, contact: e.target.value })}
+                style=${errors.contact ? 'border-color:#ff4444;' : ''}
+              />
+              ${errors.contact && html`<div class="error-text">${errors.contact}</div>`}
+            </div>
+
+            <div class="form-group">
+              <label>Select State *</label>
+              <${StateSelector} 
+                value=${quoteData.state} 
+                onSelect=${st => setQuoteData({ ...quoteData, state: st })} 
+              />
+              ${errors.state && html`<div class="error-text">${errors.state}</div>`}
+            </div>
+
+            <div class="form-group">
+              <label>Select Service *</label>
+              <select 
+                name="service"
+                value=${quoteData.service}
+                onInput=${e => setQuoteData({ ...quoteData, service: e.target.value })}
+                style=${errors.service ? 'border-color:#ff4444;' : ''}
+              >
+                <option value="">Choose Service</option>
+                ${services.map(s => html`<option value=${s.title}>${s.title}</option>`)}
+              </select>
+              ${errors.service && html`<div class="error-text">${errors.service}</div>`}
+            </div>
+
+            <div class="collapse-header" onClick=${() => setCollapseOpen(!collapseOpen)}>
+              Additional Requirements (tap to expand)
+            </div>
+            <div class="collapse-content ${collapseOpen ? 'open' : ''}">
+              ${['Site Inspection', 'Maintenance Plan', 'Urgent Delivery', 'Extended Warranty'].map(item => html`
+                <label class="checkbox-wrap">
+                  <input 
+                    type="checkbox"
+                    name="extras"
+                    value=${item}
+                    checked=${quoteData.extras.includes(item)}
+                    onInput=${() => setQuoteData({
+                      ...quoteData,
+                      extras: quoteData.extras.includes(item)
+                        ? quoteData.extras.filter(x => x !== item)
+                        : [...quoteData.extras, item]
+                    })}
+                  />
+                  ${item}
+                </label>
+              `)}
+            </div>
+
+            <div class="form-group">
+              <label>Preferred Installation Date</label>
+              <input 
+                type="date"
+                name="date"
+                value=${quoteData.date}
+                onInput=${e => setQuoteData({ ...quoteData, date: e.target.value })}
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Project Details</label>
+              <textarea 
+                name="details"
+                rows="4"
+                value=${quoteData.details}
+                onInput=${e => setQuoteData({ ...quoteData, details: e.target.value })}
+              ></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn" disabled=${submitting}>
+              ${submitting ? 'Submitting...' : 'Submit Quote'}
+            </button>
+          </form>
+          
+          <div>
+            <h3 style="color:var(--accent);margin-bottom:24px;">Contact Information</h3>
+            <p style="margin-bottom:16px;"><strong>Address:</strong><br/>123 Solar Street, Ikeja, Lagos</p>
+            <p style="margin-bottom:16px;"><strong>Phone:</strong><br/>+234 800 123 4567</p>
+            <p style="margin-bottom:16px;"><strong>Email:</strong><br/>info@meksmediatech.com</p>
+            <p style="margin-bottom:16px;"><strong>Hours:</strong><br/>Mon-Sat: 8:00 AM - 6:00 PM</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function Footer() {
+  return html`
+    <footer id="about">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+        <a href="/services">Services</a>
+        <a href="/gallery">Gallery</a>
+        <a href="/testimonials">Testimonials</a>
+        <a href="/contact">Contact</a>
+      </div>
+      <div class="social-links">
+        <a href="https://wa.me/2347038164548" class="social-link" target="_blank">📱</a>
+        <a href="https://instagram.com/meksmediatech" class="social-link" target="_blank">📷</a>
+        <a href="https://facebook.com/meksmediatech" class="social-link" target="_blank">👍</a>
+      </div>
+      <p style="color:#888;margin-top:24px;">© ${new Date().getFullYear()} Meks Media Tech. All Rights Reserved.</p>
+    </footer>
+  `;
+}
+
+render(html`<${App} />`, document.getElementById('root'));
+</script>
+</body>
+</html>
