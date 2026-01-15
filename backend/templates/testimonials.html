@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meks Media Tech — Testimonials</title>
+
+<!-- Preact UMD -->
+<script src="https://unpkg.com/preact@10.5.13/dist/preact.umd.js"></script>
+<script src="https://unpkg.com/preact@10.5.13/hooks/dist/hooks.umd.js"></script>
+
+<style>
+body { margin:0; background:#000; color:#fff; font-family:Arial; line-height:1.7; }
+
+/* HEADER */
+header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:1rem;
+    background:#111;
+    border-bottom:1px solid #A6700C;
+}
+header img { height:40px; }
+.hamburger { font-size:26px; cursor:pointer; color:#A6700C; }
+
+/* SIDEBAR */
+.sidebar {
+    position:fixed;
+    top:0;
+    left:-260px;
+    width:260px;
+    height:100vh;
+    background:#111;
+    border-right:2px solid #A6700C;
+    transition:left 0.3s ease;
+    padding-top:60px;
+    z-index:2000;
+}
+.sidebar.open { left:0; }
+.sidebar a {
+    display:block;
+    padding:1rem;
+    color:#fff;
+    text-decoration:none;
+    border-bottom:1px solid #222;
+}
+.sidebar a:hover { background:#A6700C; }
+
+/* CONTAINER */
+.container { padding:1rem; max-width:900px; margin:auto; }
+
+/* HEADINGS */
+h1,h2 { text-align:center; color:#A6700C; margin-bottom:1rem; }
+
+/* TESTIMONIAL CARD */
+.testimonial-card {
+    background:#111;
+    border:1px solid #333;
+    border-radius:10px;
+    padding:0.7rem;
+    width:88%;
+    margin:0.6rem auto;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+.testimonial-card img {
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    object-fit:cover;
+    transform:scale(2.1);
+    margin:38px auto 25px auto;
+}
+.stars {
+    font-size:18px;
+    color:#A6700C;
+    margin-top:-6px;
+    margin-bottom:8px;
+    position:relative;
+    top:-2px;
+}
+.testimonial-text { margin:4px 0 6px 0; font-size:14px; line-height:1.35; text-align:justify; }
+.testimonial-name, .testimonial-state, .testimonial-date { line-height:1.1; margin:1px 0; }
+.testimonial-name { color:#A6700C; font-weight:bold; font-size:14px; }
+.testimonial-state { font-size:12px; color:#ccc; }
+.testimonial-date { font-size:11px; color:#888; }
+
+/* FEATURED SLIDER */
+.featured-slider { width:100%; overflow:hidden; margin-bottom:20px; }
+.featured-inner { display:flex; transition:transform 0.6s ease-in-out; }
+
+/* FOOTER */
+footer {
+    margin-top:2rem;
+    padding:1rem;
+    background:#111;
+    border-top:1px solid #A6700C;
+    text-align:center;
+}
+footer a { color:#A6700C; margin:0 10px; text-decoration:none; }
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="hamburger" onclick="toggleSidebar()">☰</div>
+    <img src="assets/logo.png" alt="Meks Media Tech Logo"/>
+</header>
+
+<div id="sidebar" class="sidebar">
+    <a href="index">Home</a>
+    <a href="about">About</a>
+    <a href="services">Services</a>
+    <a href="gallery">Gallery</a>
+    <a href="testimonials" style="background:#A6700C;">Testimonials</a>
+    <a href="contact">Contact</a>
+</div>
+
+<div class="container">
+    <h1>Testimonials</h1>
+    <div style="text-align:center; margin-bottom:20px;">
+        <a href="submit-testimonial.html"
+           style="background:#A6700C; color:black; padding:10px 20px; border-radius:5px; text-decoration:none; font-weight:bold;">
+           Submit Your Testimonial
+        </a>
+    </div>
+    <div id="app"></div>
+</div>
+
+<footer>
+    <a href="index">Home</a>
+    <a href="about">About</a>
+    <a href="services">Services</a>
+    <a href="gallery">Gallery</a>
+    <a href="contact">Contact</a>
+    <p style="color:#555;">© 2025 Meks Media Tech</p>
+</footer>
+
+<script>
+/* SIDEBAR LOGIC */
+let sidebar = document.getElementById("sidebar");
+let sidebarTimer;
+function toggleSidebar() { sidebar.classList.toggle("open"); resetSidebarAutoClose(); }
+function closeSidebar() { sidebar.classList.remove("open"); }
+function resetSidebarAutoClose() { clearTimeout(sidebarTimer); sidebarTimer = setTimeout(closeSidebar, 5000); }
+document.body.addEventListener("click", e => {
+    if (!sidebar.contains(e.target) && !e.target.classList.contains("hamburger")) closeSidebar();
+});
+sidebar.addEventListener("mouseleave", () => {
+    sidebarTimer = setTimeout(closeSidebar, 3000);
+});
+
+/* PREACT LOGIC */
+const { h, render } = preact;
+const { useEffect, useState } = preactHooks;
+
+/* UPDATED PHOTO RESOLVER - FIXED */
+function resolveImage(t) {
+    // Check for media_url first (from file uploads)
+    if (t.media_url) return t.media_url;
+    if (t.mediaUrl) return t.mediaUrl;
+    
+    // Also check for photo_url (if manually added)
+    if (t.photo_url) return t.photo_url;
+    if (t.photoUrl) return t.photoUrl;
+    
+    const candidates = [
+        t.photo, t.Photo, t.PHOTO,
+        t.img, t.Img, t.IMG,
+        t.image, t.Image, t.IMAGE,
+        t.avatar, t.Avatar,
+        t.profile_photo, t.profilePhoto,
+        t.photo_url, t.photoUrl,
+        t.image_url, t.imageUrl,
+        t.picture, t.pic,
+        t.file, t.file_path, t.path, t.url,
+        t.media_url, t.mediaUrl  // Added these
+    ].filter(Boolean);
+
+    if (!candidates.length) return "assets/avatar.png";
+
+    let src = candidates[0];
+
+    if (/^[A-Za-z0-9+/]+=*$/.test(src) && src.length > 100) {
+        return `data:image/jpeg;base64,${src}`;
+    }
+
+    if (!src.startsWith("http") && !src.startsWith("/") && !src.startsWith("data:")) {
+        src = `/${src}`;
+    }
+
+    return src;
+}
+
+function StarRating({ rating }) {
+    return h("div", { class: "stars" }, "★★★★★".slice(0, rating));
+}
+
+function TestimonialCard({ t }) {
+    return h("div", { class: "testimonial-card" }, [
+        h("img", {
+            src: resolveImage(t),
+            alt: t.name || "Testimonial photo",
+            onError: e => { e.target.src = "assets/avatar.png"; }
+        }),
+        h(StarRating, { rating: t.rating ?? 5 }),
+        h("p", { class: "testimonial-text" }, t.text),
+        h("p", { class: "testimonial-name" }, t.name),
+        h("p", { class: "testimonial-state" }, t.state),
+        h("p", { class: "testimonial-date" }, t.date)
+    ]);
+}
+
+function FeaturedSlider({ testimonials }) {
+    const featured = testimonials.slice(0, 5);
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        if (!featured.length) return;
+        const timer = setInterval(() => {
+            setIndex(i => (i + 1) % featured.length);
+        }, 3000);
+        return () => clearInterval(timer);
+    }, [featured.length]);
+
+    if (!featured.length) return null;
+
+    return h("div", { class: "featured-slider" }, [
+        h("div", {
+            class: "featured-inner",
+            style: `transform: translateX(-${index * 100}%)`
+        }, featured.map(t =>
+            h("div", { style: "min-width:100%;" }, h(TestimonialCard, { t }))
+        ))
+    ]);
+}
+
+function TestimonialsPage() {
+    const [testimonials, setTestimonials] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch("/api/testimonials")
+            .then(res => res.json())
+            .then(data => {
+                const approvedOnly = Array.isArray(data)
+                    ? data.filter(t => t.approved === true)
+                    : [];
+                setTestimonials(approvedOnly);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Failed to fetch testimonials:", err);
+                setLoading(false);
+            });
+    }, []);
+
+    if (loading) {
+        return h("p", { style: "text-align:center; color:#888;" }, "Loading testimonials...");
+    }
+
+    if (!testimonials.length) {
+        return h("p", { style: "text-align:center; color:#777;" }, "No approved testimonials yet.");
+    }
+
+    return h("div", {}, [
+        h("h2", {}, "Featured Testimonials"),
+        h(FeaturedSlider, { testimonials }),
+        h("h2", { style: "margin-top:30px" }, "All Reviews"),
+        h("div", {}, testimonials.map(t =>
+            h(TestimonialCard, { t })
+        ))
+    ]);
+}
+
+render(h(TestimonialsPage), document.getElementById("app"));
+</script>
+
+</body>
+</html>
