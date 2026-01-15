@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>About MMT</title>
+
+<!-- Preact UMD -->
+<script src="https://unpkg.com/preact@10.19.3/dist/preact.umd.js"></script>
+<script src="https://unpkg.com/preact@10.19.3/hooks/dist/hooks.umd.js"></script>
+<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #000;
+    color: #fff;
+    line-height: 1.6;
+  }
+
+  /* HEADER + SIDEBAR from Services Page */
+  header {
+    background:#111;
+    border-bottom:1px solid #A6700C;
+    padding:1rem;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+
+  header img { height:40px; margin-left:auto; }
+  .hamburger { font-size:26px; cursor:pointer; color:#A6700C; }
+
+  .sidebar {
+    position:fixed;
+    left:-260px;
+    top:0;
+    width:260px;
+    height:100vh;
+    background:#111;
+    border-right:2px solid #A6700C;
+    padding-top:60px;
+    transition:0.3s;
+    z-index:2000;
+  }
+  .sidebar.open { left:0; }
+  .sidebar a {
+    display:block;
+    padding:1rem;
+    color:#fff;
+    text-decoration:none;
+    border-bottom:1px solid #222;
+  }
+  .sidebar a:hover { background:#A6700C; }
+
+  /* ABOUT PAGE BASE STYLES (kept unchanged) */
+  h1, h2 { text-align: center; color: #A6700C; margin-bottom: 1rem; }
+
+  .container { max-width: 800px; margin: auto; padding: 1rem; }
+
+  .section { background: #111; padding: 1.5rem; border-radius: 10px; border: 1px solid #333; margin-bottom: 2rem; text-align: justify; }
+
+  .team-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: 1rem;
+  }
+
+  .team-card {
+    background-color: #111;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: default;
+    border: 1px solid #333;
+  }
+
+  .team-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+
+  .team-card img.team-photo {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    border: 3px solid #A6700C;
+  }
+
+  .team-card h4 {
+    color: #A6700C;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+  }
+
+  .team-card p.position {
+    color: #ccc;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+
+  .team-card p.desc {
+    font-size: 0.9rem;
+    color: #ddd;
+    text-align: justify;
+  }
+
+  .loading {
+    text-align: center;
+    margin: 2rem 0;
+    color: #A6700C;
+  }
+
+  /* FOOTER from Services Page */
+  footer {
+    margin-top:2rem;
+    padding:1rem;
+    background:#111;
+    border-top:1px solid #A6700C;
+    text-align:center;
+  }
+  footer a { color:#A6700C; margin:0 10px; text-decoration:none; }
+
+</style>
+</head>
+
+<body>
+<div id="app"></div>
+
+<script type="module">
+const { h, render } = window.preact;
+const { useEffect, useState } = window.preactHooks;
+const html = window.htm.bind(h);
+
+function AboutPage() {
+  const [aboutData, setAboutData] = useState({ mission: '', history: '', team: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => { fetchAboutData(); }, []);
+
+  const fetchAboutData = async () => {
+    try {
+      const res = await fetch('/api/about');
+      if (!res.ok) throw new Error('Failed to fetch about data.');
+      const data = await res.json();
+      setAboutData({
+        mission: data.mission || '',
+        history: data.history || '',
+        team: data.team || []
+      });
+    } catch (err) {
+      console.error(err);
+      setError('Could not load about information. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* SIDEBAR LOGIC from Services Page */
+  useEffect(() => {
+    let sidebar = document.getElementById("sidebar");
+    let timer;
+
+    function toggleSidebar() {
+      sidebar.classList.toggle("open");
+      resetTimer();
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove("open");
+    }
+
+    function resetTimer() {
+      clearTimeout(timer);
+      timer = setTimeout(closeSidebar, 5000);
+    }
+
+    document.querySelector(".hamburger")
+      .addEventListener("click", toggleSidebar);
+
+    document.body.addEventListener("click", e => {
+      if (!sidebar.contains(e.target) && !e.target.classList.contains("hamburger"))
+        closeSidebar();
+    });
+
+    sidebar.addEventListener("mouseleave", () => {
+      timer = setTimeout(closeSidebar, 3000);
+    });
+  }, []);
+
+  return html`
+    <div>
+
+      <!-- HEADER (fully replaced) -->
+      <header>
+        <div class="hamburger">☰</div>
+        <img src="assets/logo.png" alt="Logo" />
+      </header>
+
+      <!-- SIDEBAR (fully replaced) -->
+      <div id="sidebar" class="sidebar">
+        <a href="/">Home</a>
+        <a href="/about" style="background:#A6700C;">About</a>
+        <a href="/services">Services</a>
+        <a href="/gallery">Gallery</a>
+        <a href="/testimonials">Testimonials</a>
+        <a href="/contact">Contact</a>
+      </div>
+
+      <!-- ORIGINAL ABOUT CONTENT (unchanged except title) -->
+      <div class="container">
+        <h1>About MMT</h1>
+
+        ${loading ? html`<div class="loading">Loading content...</div>` :
+          error ? html`<div class="loading">${error}</div>` :
+          html`
+            <div class="section">
+              <h2>Our Mission</h2>
+              <p>${aboutData.mission}</p>
+            </div>
+
+            <div class="section">
+              <h2>Our History</h2>
+              <p>${aboutData.history}</p>
+            </div>
+
+            <div class="section">
+              <h2>Our Team</h2>
+              <div class="team-section">
+                ${aboutData.team.map(member => html`
+                  <div class="team-card">
+                    <img class="team-photo" src=${member.photo || 'assets/default-team.jpg'} alt=${member.name} />
+                    <h4>${member.name}</h4>
+                    <p class="position">${member.position}</p>
+                    <p class="desc">${member.desc}</p>
+                  </div>
+                `)}
+              </div>
+            </div>
+          `
+        }
+      </div>
+
+      <!-- FOOTER (fully replaced) -->
+      <footer>
+        <a href="/">Home</a>
+        <a href="/gallery">Gallery</a>
+        <a href="/contact">Contact</a>
+        <p style="color:#555;">© 2025 Meks Media Tech</p>
+      </footer>
+
+    </div>
+  `;
+}
+
+render(html`<${AboutPage} />`, document.getElementById("app"));
+</script>
+</body>
+</html>
