@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Submit Testimonial – Meks Media Tech</title>
+
+<!-- Preact UMD -->
+<script src="https://unpkg.com/preact@10.5.13/dist/preact.umd.js"></script>
+<script src="https://unpkg.com/preact@10.5.13/hooks/dist/hooks.umd.js"></script>
+
+<style>
+body { margin:0; background:#000; color:#fff; font-family:Arial; line-height:1.7; }
+
+/* HEADER */
+header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:1rem;
+    background:#111;
+    border-bottom:1px solid #A6700C;
+}
+header img { height:40px; }
+.hamburger { font-size:26px; cursor:pointer; color:#A6700C; }
+
+/* SIDEBAR */
+.sidebar {
+    position:fixed;
+    top:0;
+    left:-260px;
+    width:260px;
+    height:100vh;
+    background:#111;
+    border-right:2px solid #A6700C;
+    transition:left 0.3s ease;
+    padding-top:60px;
+    z-index:2000;
+}
+.sidebar.open { left:0; }
+.sidebar a {
+    display:block;
+    padding:1rem;
+    color:#fff;
+    text-decoration:none;
+    border-bottom:1px solid #222;
+}
+.sidebar a:hover { background:#A6700C; }
+
+/* CONTAINER */
+.container { padding:1rem; max-width:700px; margin:auto; }
+
+/* HEADINGS */
+h1,h2 { text-align:center; color:#A6700C; margin-bottom:1rem; }
+
+/* FORM */
+form label { display:block; margin:10px 0 4px; }
+form input, form textarea { width:95%; padding:8px; margin-bottom:10px; border-radius:5px; border:none; font-size:14px; }
+form button.btn { background:#A6700C; color:black; border:none; padding:10px 15px; border-radius:5px; font-weight:bold; cursor:pointer; width:95%; }
+form button.btn:disabled { opacity:0.7; cursor:not-allowed; }
+
+/* FOOTER */
+footer {
+    margin-top:2rem;
+    padding:1rem;
+    background:#111;
+    border-top:1px solid #A6700C;
+    text-align:center;
+}
+footer a { color:#A6700C; margin:0 10px; text-decoration:none; }
+
+/* IMAGE PREVIEW */
+#preview-img {
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    object-fit:cover;
+    transform:scale(2.1);
+    margin:38px auto 25px auto;
+    display:block;
+}
+
+/* STAR RATING */
+.star-container {
+    display:flex;
+    gap:8px;
+    font-size:32px;
+    cursor:pointer;
+    margin:10px 0 15px 0;
+}
+.star { color:#444; transition:0.2s; }
+.star.active { color:#A6700C; transform:scale(1.1); }
+
+/* STATE DROPDOWN */
+.state-wrapper {
+    position:relative;
+    width:95%;
+}
+.state-list {
+    position:absolute;
+    top:40px;
+    left:0;
+    width:100%;
+    max-height:180px;
+    overflow-y:auto;
+    background:#111;
+    border:1px solid #333;
+    border-radius:5px;
+    z-index:3000;
+    display:none;
+}
+.state-list div {
+    padding:8px;
+    cursor:pointer;
+    border-bottom:1px solid #222;
+}
+.state-list div:hover {
+    background:#A6700C;
+    color:#000;
+}
+
+.progress {
+    width:95%;
+    background:#222;
+    border-radius:5px;
+    overflow:hidden;
+    margin-bottom:10px;
+}
+.progress-bar {
+    height:8px;
+    width:0%;
+    background:#A6700C;
+    transition:width 0.2s;
+}
+
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+const { h, render } = preact;
+const { useState, useEffect } = preactHooks;
+
+const MAX_IMAGE_SIZE = 1 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
+
+function SubmitTestimonialPage() {
+    const [form, setForm] = useState({
+        name:'', state:'', date:'', rating:5, text:'', file:null
+    });
+
+    const [submitting, setSubmitting] = useState(false);
+    const [status, setStatus] = useState(null);
+    const [preview, setPreview] = useState(null);
+    const [progress, setProgress] = useState(0);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.type.startsWith("image/") && file.size > MAX_IMAGE_SIZE) {
+            alert("Image must not exceed 1MB");
+            return;
+        }
+
+        if (file.type.startsWith("video/") && file.size > MAX_VIDEO_SIZE) {
+            alert("Video must not exceed 50MB");
+            return;
+        }
+
+        setForm({...form, file});
+
+        if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = ev => setPreview(ev.target.result);
+            reader.readAsDataURL(file);
+        } else setPreview(null);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setSubmitting(true);
+        setStatus(null);
+        setProgress(0);
+
+        const data = new FormData();
+        Object.entries(form).forEach(([k,v]) => v && data.append(k,v));
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/testimonials");
+
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable)
+                setProgress(Math.round((e.loaded / e.total) * 100));
+        };
+
+        xhr.onload = () => {
+            setSubmitting(false);
+            if (xhr.status === 200) {
+                setStatus("success");
+                setForm({ name:'', state:'', date:'', rating:5, text:'', file:null });
+                setPreview(null);
+                setProgress(0);
+            } else {
+                setStatus("error");
+            }
+        };
+
+        xhr.onerror = () => {
+            setSubmitting(false);
+            setStatus("error");
+        };
+
+        xhr.send(data);
+    };
+
+    return h("div", {}, [
+        h("div",{class:"container"},[
+            h("h1",{},"Share Your Experience"),
+
+            status==="success" &&
+            h("div",{style:"background:green;padding:10px;border-radius:5px;"},"Thank you! Your testimonial has been submitted."),
+
+            status==="error" &&
+            h("div",{style:"background:red;padding:10px;border-radius:5px;"},"Submission failed. Please try again."),
+
+            h("form",{onSubmit:handleSubmit},[
+                h("input",{required:true,placeholder:"Name",value:form.name,onInput:e=>setForm({...form,name:e.target.value})}),
+                h("input",{required:true,placeholder:"State",value:form.state,onInput:e=>setForm({...form,state:e.target.value})}),
+                h("input",{type:"date",required:true,value:form.date,onInput:e=>setForm({...form,date:e.target.value})}),
+                h("textarea",{required:true,placeholder:"Your Testimonial",value:form.text,onInput:e=>setForm({...form,text:e.target.value})}),
+                h("input",{type:"file",accept:"image/*,video/*",onChange:handleFileChange}),
+                preview && h("img",{id:"preview-img",src:preview}),
+                submitting &&
+                h("div",{class:"progress"},[
+                    h("div",{class:"progress-bar",style:`width:${progress}%`})
+                ]),
+                h("button",{class:"btn",disabled:submitting}, submitting?"Uploading...":"Submit Testimonial")
+            ])
+        ])
+    ]);
+}
+
+render(h(SubmitTestimonialPage), document.getElementById("app"));
+</script>
+
+</body>
+</html>
